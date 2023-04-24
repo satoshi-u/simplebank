@@ -1,0 +1,13 @@
+version: "1"
+project:
+    id: ""
+packages:
+  - name: "db"
+    path: "./db/sqlc"
+    queries: "./db/query/"
+    schema: "./db/migration/"
+    engine: "postgresql" #postgresql/mysql
+    emit_json_tags: true
+    emit_prepared_queries: false
+    emit_interface: false # might be useful in testing later
+    emit_exact_table_names: false # generated structs singular if set to false

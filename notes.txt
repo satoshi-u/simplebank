@@ -1,0 +1,84 @@
+1 -> Schema Essentials
+
+        drew the schema here : https://dbdiagram.io/d/6443ae366b3194705103b899
+
+2 -> Docker Essentials
+
+        start postgres docker container
+        # docker run --name simple-bank-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+
+        run cmd inside container (pw not required because image sets up trust authentication locally)
+        # docker exec -it simple-bank-db psql -U root
+        # select now();
+
+        get all containers
+        # docker ps -a
+
+        get logs of container
+        # docker logs simple-bank-db
+
+        stop container
+        # docker stop simple-bank-db
+
+        remove container
+        # docker rm simple-bank-db
+
+        restart container
+        # docker start simple-bank-db
+
+        go inside container
+        # docker exec -it simple-bank-db bash
+        # docker exec -it simple-bank-db /bin/sh
+
+        create a new db with psql cli from inside or directly
+        # createdb --username=root --owner=root simple_bank
+        # docker exec -it simple-bank-db createdb --username=root --owner=root simple_bank
+
+        access new db with psql cli from inside or directly
+        # psql -U root simple_bank
+        # docker exec -it simple-bank-db psql -U root simple_bank
+
+        delete new db with psql cli from inside or directly
+        # dropdb simple_bank
+        # docker exec -it simple-bank-db dropdb simple_bank
+
+        makefile -> easy to setup in local for new folks in project
+
+2 -> DB Migration Essentials
+
+        Install cli golang-migrate
+        # brew install golang-migrate
+
+        create migrate dir for project
+        # migrate create -ext sql -dir db/migration -seq init_schema
+
+        run migrate up/down (included in makefile)
+        # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+        # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
+
+4 -> Generate golang CRUD from SQL
+
+        use for doing low-level custom queries : https://pkg.go.dev/database/sql
+        use for doing high-level queries : https://pkg.go.dev/gorm.io/gorm
+        faster alt : https://pkg.go.dev/github.com/jmoiron/sqlx
+        faster, autogen & compile-time alt: https://pkg.go.dev/github.com/kyleconroy/sqlc
+
+        Install sqlc
+        # brew install sqlc
+
+        Init - genrates a yaml with empty settings. For more : https://github.com/kyleconroy/sqlc/tree/v1.4.0
+        # sqlc init
+
+        Init go project and tidy project
+        # go mod init github.com/satoshi-u/simplebank
+        # go mod tidy
+
+        Generate code (included in makefile, add .sql in db/query and then run)
+        # sqlc generate
+
+
+
+
+
+
+
