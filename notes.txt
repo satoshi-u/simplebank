@@ -76,7 +76,7 @@
         Generate code (included in makefile, add .sql in db/query and then run)
         # sqlc generate
 
-4 -> Golang tests for db CRUD
+4 -> Golang unit tests for db CRUD
 
         note*
             go get github.com/lib/pq
@@ -85,4 +85,7 @@
 
         Matching test results in go tests
         go get github.com/stretchr/testify
+
+        note*
+            Added unit tests for account, entry and transfer db CRUD generated code
 

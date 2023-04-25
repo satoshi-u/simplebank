@@ -41,6 +41,11 @@ func RandomBalance() int64 {
 	return RandomInt(0, 10000000)
 }
 
+// RandomAmount generates a random amount for entry
+func RandomAmount() int64 {
+	return RandomInt(0, 100000)
+}
+
 // RandomCurrency generates a random currency code for account
 func RandomCurrency() string {
 	n := len(currencies)
