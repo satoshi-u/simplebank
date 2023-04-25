@@ -76,9 +76,13 @@
         Generate code (included in makefile, add .sql in db/query and then run)
         # sqlc generate
 
+4 -> Golang tests for db CRUD
 
+        note*
+            go get github.com/lib/pq
+            Add _ "github.com/lib/pq" in imports for the pgdb driver to work properly
+            go mod tidy to fix go.mod dependency
 
-
-
-
+        Matching test results in go tests
+        go get github.com/stretchr/testify
 
