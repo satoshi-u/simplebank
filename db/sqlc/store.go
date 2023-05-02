@@ -123,27 +123,40 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		// 	return err
 		// }
 
-		// update account_from balance with 1 single query
-		fmt.Println(txName, "update accountFrom")
-		result.FromAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-			ID:     arg.FromAccountId,
-			Amount: -arg.Amount,
-		})
-		if err != nil {
-			return err
+		// update accounts' balance in a consistent order (lower account id first) - avoid deadlock
+		if arg.FromAccountId < arg.ToAccountId {
+			// update fromAccount first as it is lower account id here
+			result.FromAccount, result.ToAccount, err = addAmountInOrder(ctx, q, arg.FromAccountId, -arg.Amount, arg.ToAccountId, arg.Amount)
+			if err != nil {
+				return err
+			}
+		} else {
+			// update toAccount first as it is lower account id here
+			result.ToAccount, result.FromAccount, err = addAmountInOrder(ctx, q, arg.ToAccountId, arg.Amount, arg.FromAccountId, -arg.Amount)
+			if err != nil {
+				return err
+			}
 		}
-
-		// update account_to balance with 1 single query
-		fmt.Println(txName, "update accountTo")
-		result.ToAccount, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
-			ID:     arg.ToAccountId,
-			Amount: arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
-
 		return nil
 	})
+
 	return result, err
+}
+
+// addAmountInOrder is a helper func to make transfer happen in order
+func addAmountInOrder(ctx context.Context, q *Queries, AccountID1 int64, amount1 int64, AccountID2 int64, amount2 int64) (account1 Account, account2 Account, err error) {
+	// update account1 balance with 1 single query
+	account1, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
+		ID:     AccountID1,
+		Amount: amount1,
+	})
+	if err != nil {
+		return
+	}
+	// update account2 balance with 1 single query
+	account2, err = q.UpdateAccountBalance(ctx, UpdateAccountBalanceParams{
+		ID:     AccountID2,
+		Amount: amount2,
+	})
+	return
 }

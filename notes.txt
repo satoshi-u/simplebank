@@ -129,6 +129,17 @@
 
             optimize running 2 queries @account{get-update} by having a single query @account{update}
 
+===============================================================================================================================================
+8 -> Avoid Deadlocks - keep order same
+
+        note*
+            Deadlock can still happen because of concurrent txns updating pair of same records in different order
+            To avoid, make txns update the records in same order always
+
+            Application must acquire locks in a consistent order
+
+
+
 
 
 
