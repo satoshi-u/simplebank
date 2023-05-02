@@ -1,7 +1,9 @@
+===============================================================================================================================================
 1 -> Schema Essentials
 
         drew the schema here : https://dbdiagram.io/d/6443ae366b3194705103b899
 
+===============================================================================================================================================
 2 -> Docker Essentials
 
         start postgres docker container
@@ -44,7 +46,8 @@
 
         makefile -> easy to setup in local for new folks in project
 
-2 -> DB Migration Essentials
+===============================================================================================================================================
+3 -> DB Migration Essentials
 
         Install cli golang-migrate
         # brew install golang-migrate
@@ -56,6 +59,7 @@
         # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
         # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
 
+===============================================================================================================================================
 4 -> Generate golang CRUD from SQL
 
         use for doing low-level custom queries : https://pkg.go.dev/database/sql
@@ -76,7 +80,8 @@
         Generate code (included in makefile, add .sql in db/query and then run)
         # sqlc generate
 
-4 -> Golang unit tests for db CRUD
+===============================================================================================================================================
+5 -> Golang unit tests for db CRUD
 
         note*
             go get github.com/lib/pq
@@ -88,4 +93,43 @@
 
         note*
             Added unit tests for account, entry and transfer db CRUD generated code
+
+===============================================================================================================================================
+6 -> SQL DB Txn
+
+        note*
+            updated Store to have both Queries and sql.db both
+            wrote a generic execTx to carry out SQL DB Txns
+            used execTx to carry out multiple create/update queries in one single Tx
+
+===============================================================================================================================================
+7 -> DB Txn Lock & dealing with Deadlocks
+
+        note*
+            deadlocks happen because of concurrent txns in db
+            tx2 : {create transfer}[ok]
+            tx2 : {create entry}[ok]
+            tx1 : {create transfer}[holding-exclusive-lock]... LOCK HERE
+            tx2 : {create entry}[ok]
+            tx2 : {get account}[waiting-shared-lock]... WAITING LOCK
+            tx1 : {create entry}[ok]
+            tx1 : {create entry}[ok]
+            tx1 : {get account}[waiting-shared-lock]... DEADLOCK
+
+        note*
+            one way to avoid deadlocks is by removing the foreign key constraints on tables[ACCOUNT<->TRANSFER]
+
+            lock is required by "tx1 : {create transfer}" as postgres worries that other txs might update the transfer table's referred from-account-id/to-account-id in accounts table,
+            thereby it must guard the foreign key constraint whilst updating the transfer record
+            one potential solution is in query "select account for update",
+            we must specify that pk won't be touched in "update account" query which is true also
+            # SELECT * FROM accounts WHERE id = $1 LIMIT 1 FOR NO KEY UPDATE;
+            Regenerate autogen code sqlc with updated account.sql
+            # make sqlc
+
+            optimize running 2 queries @account{get-update} by having a single query @account{update}
+
+
+
+
 
