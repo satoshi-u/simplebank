@@ -138,6 +138,29 @@
 
             Application must acquire locks in a consistent order
 
+===============================================================================================================================================
+9 -> Isolation Levels & Read Phenomenon
+
+        4 levels:
+            Read Uncommitted  <->   doesn't even prevent Dirty Read
+            Read Committed    <->   prevents Dirty Read, but Non Repeatable Read & Phantom Read can occur
+            Repeatable Read   <->   prevents Dirty Read, Non Repeatable Read & Phantom Read but
+            Serializable      <->   Serialization Anomaly
+
+        For an open mysql session,
+            get mysql's current isolation level
+            # select @transaction_isolation
+
+            get mysql's global isolation level
+            # select @global.transaction_isolation
+
+            mysql change isolation level
+            # set session transaction isolation level read uncommitted;
+            # set session transaction isolation level read committed;
+            # set session transaction isolation level repeatable read;
+            # set session transaction isolation level serializable read;
+
+
 
 
 
