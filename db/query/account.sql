@@ -30,7 +30,7 @@ RETURNING *;
 -- RETURNING *;
 -- name: UpdateAccountBalance :one
 UPDATE accounts
-SET balance = balance + sqlc.arg(amount)
+SET balance = balance + sqlc.arg(amount) -- sqlc.arg changes the generated arg name of UpdateAccountBalanceParams in account.sql.go from Balance int64 `json:"balance"` to Amount int64 `json:"amount"`
 WHERE id = sqlc.arg(id)
 RETURNING *;
 -- name: DeleteAccount :exec

@@ -1,7 +1,7 @@
 ===============================================================================================================================================
 1 -> Schema Essentials
 
-        drew the schema here : https://dbdiagram.io/d/6443ae366b3194705103b899
+        drew the schema here and get simple-bank.pdf/simple-bank.sql : https://dbdiagram.io/d/6443ae366b3194705103b899
 
 ===============================================================================================================================================
 2 -> Docker Essentials
@@ -74,7 +74,7 @@
         # sqlc init
 
         Init go project and tidy project
-        # go mod init github.com/satoshi-u/simplebank
+        # go mod init github.com/web3dev6/simplebank
         # go mod tidy
 
         Generate code (included in makefile, add .sql in db/query and then run)
@@ -92,7 +92,9 @@
         go get github.com/stretchr/testify
 
         note*
-            Added unit tests for account, entry and transfer db CRUD generated code
+            Added unit tests for account, entry and transfer db CRUD generated code, which use testQueries conn created in main_test 
+        
+        go test ./...
 
 ===============================================================================================================================================
 6 -> SQL DB Txn
@@ -101,6 +103,7 @@
             updated Store to have both Queries and sql.db both
             wrote a generic execTx to carry out SQL DB Txns
             used execTx to carry out multiple create/update queries in one single Tx
+            wrote unit test(s) for store 
 
 ===============================================================================================================================================
 7 -> DB Txn Lock & dealing with Deadlocks
@@ -141,14 +144,36 @@
 ===============================================================================================================================================
 9 -> Isolation Levels & Read Phenomenon
 
-        4 levels:
+        ACID -
+                Atomicity   : Either all operations complete successfully or txn fails and db left unchanged
+                Consistency : Db state must be valid after the tx, all constraints must be satisfied
+                Isolation   : Concurrent txns must not affect each other
+                Durability  : Data written by a successful tx must be recorded in persistent storage
+
+        read Phenomenon: -
+                Dirty Read            : A txn reads data written by other uncommitted tx
+                Non Repeatable Read   : A txn reads the same row twice and sees different value as it got modified by other committed tx
+                Phantom Read          : A txn reads a set of rows(based on some condition) twice and sees different values as it got modified by other committed tx
+                Serialization Anomaly : The result of a group of concurrent committed txns is impossible to achieve if we run same txns sequentially(no overlaps) in any order
+                                        case a. run concurrently 2 times (sum up balance of accounts in table and create new account with that sum as balance)
+                                             b. run sequentially 2 times (sum up balance of accounts in table and create new account with that sum as balance)
+                                             -> both give different results
+
+        4 std isolation levels -
             Read Uncommitted  <->   doesn't even prevent Dirty Read
             Read Committed    <->   prevents Dirty Read, but Non Repeatable Read & Phantom Read can occur
-            Repeatable Read   <->   prevents Dirty Read, Non Repeatable Read & Phantom Read but
-            Serializable      <->   Serialization Anomaly
+            Repeatable Read   <->   prevents Dirty Read, Non Repeatable Read & Phantom Read but Serialization Anomaly can occur
+            Serializable Read <->   prevents even Serialization Anomaly
+        NOTE: rules only applicable for read queries, write is always in sync or throws error
+        NOTE: you might wanna have txn retries in place when writes/updates are failed in Repeatable Read/Serializable Read
+        NOTE: in postgres, read uncommitted behaves as read committed
+        NOTE: in mysql, update to same entry is allowed to happen in concurrent txns with repeatable read mode
+        NOTE: in postgres, update to same entry throws error in concurrent txns with repeatable read mode
+        NOTE: in mysql's serializable read, serializable anamoly is prevented by throwing deadlock in 2nd txn in concurrent txns affecting same rows
+        NOTE: in postgres's serializable read, serializable anamoly is prevented by throwing error in 2nd txn(tells to retry) in concurrent txns affecting same rows
 
         For an open mysql session,
-            get mysql's current isolation level
+            get mysql's current isolation level (default is repeatable read)
             # select @transaction_isolation
 
             get mysql's global isolation level
@@ -159,6 +184,17 @@
             # set session transaction isolation level read committed;
             # set session transaction isolation level repeatable read;
             # set session transaction isolation level serializable read;
+        
+         For an open postgres session,
+            get postgres's current isolation level (default is read committed)
+            # show transaction isolation level
+
+            postgres change isolation level - at txn level
+            # begin
+            # set transaction isolation level read uncommitted;
+            # set transaction isolation level read committed;
+            # set transaction isolation level repeatable read;
+            # set transaction isolation level serializable read;
 
 
 

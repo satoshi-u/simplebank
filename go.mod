@@ -1,4 +1,4 @@
-module github.com/satoshi-u/simplebank
+module github.com/web3dev6/simplebank
 
 go 1.18
 

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/satoshi-u/simplebank/util"
 	"github.com/stretchr/testify/require"
+	"github.com/web3dev6/simplebank/util"
 )
 
 func createRandomTransfer(t *testing.T, account1, account2 Account) Transfer {
