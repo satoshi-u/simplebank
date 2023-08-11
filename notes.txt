@@ -7,42 +7,42 @@
 2 -> Docker Essentials
 
         start postgres docker container
-        # docker run --name simple-bank-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
+        $ docker run --name simple-bank-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
 
         run cmd inside container (pw not required because image sets up trust authentication locally)
-        # docker exec -it simple-bank-db psql -U root
-        # select now();
+        $ docker exec -it simple-bank-db psql -U root
+        $ select now();
 
         get all containers
-        # docker ps -a
+        $ docker ps -a
 
         get logs of container
-        # docker logs simple-bank-db
+        $ docker logs simple-bank-db
 
         stop container
-        # docker stop simple-bank-db
+        $ docker stop simple-bank-db
 
         remove container
-        # docker rm simple-bank-db
+        $ docker rm simple-bank-db
 
         restart container
-        # docker start simple-bank-db
+        $ docker start simple-bank-db
 
         go inside container
-        # docker exec -it simple-bank-db bash
-        # docker exec -it simple-bank-db /bin/sh
+        $ docker exec -it simple-bank-db bash
+        $ docker exec -it simple-bank-db /bin/sh
 
         create a new db with psql cli from inside or directly
-        # createdb --username=root --owner=root simple_bank
-        # docker exec -it simple-bank-db createdb --username=root --owner=root simple_bank
+        $ createdb --username=root --owner=root simple_bank
+        $ docker exec -it simple-bank-db createdb --username=root --owner=root simple_bank
 
         access new db with psql cli from inside or directly
-        # psql -U root simple_bank
-        # docker exec -it simple-bank-db psql -U root simple_bank
+        $ psql -U root simple_bank
+        $ docker exec -it simple-bank-db psql -U root simple_bank
 
         delete new db with psql cli from inside or directly
-        # dropdb simple_bank
-        # docker exec -it simple-bank-db dropdb simple_bank
+        $ dropdb simple_bank
+        $ docker exec -it simple-bank-db dropdb simple_bank
 
         makefile -> easy to setup in local for new folks in project
 
@@ -50,14 +50,14 @@
 3 -> DB Migration Essentials
 
         Install cli golang-migrate
-        # brew install golang-migrate
+        $ brew install golang-migrate
 
         create migrate dir for project
-        # migrate create -ext sql -dir db/migration -seq init_schema
+        $ migrate create -ext sql -dir db/migration -seq init_schema
 
         run migrate up/down (included in makefile)
-        # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
-        # migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
+        $ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+        $ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
 
 ===============================================================================================================================================
 4 -> Generate golang CRUD from SQL
@@ -68,33 +68,33 @@
         faster, autogen & compile-time alt: https://pkg.go.dev/github.com/kyleconroy/sqlc
 
         Install sqlc
-        # brew install sqlc
+        $ brew install sqlc
 
         Init - genrates a yaml with empty settings. For more : https://github.com/kyleconroy/sqlc/tree/v1.4.0
-        # sqlc init
+        $ sqlc init
 
         Init go project and tidy project
-        # go mod init github.com/web3dev6/simplebank
-        # go mod tidy
+        $ go mod init github.com/web3dev6/simplebank
+        $ go mod tidy
 
         Generate code (included in makefile, add .sql in db/query and then run)
-        # sqlc generate
+        $ sqlc generate
 
 ===============================================================================================================================================
 5 -> Golang unit tests for db CRUD
 
         note*
-            go get github.com/lib/pq
+            $ go get github.com/lib/pq
             Add _ "github.com/lib/pq" in imports for the pgdb driver to work properly
-            go mod tidy to fix go.mod dependency
+            $ go mod tidy to fix go.mod dependency
 
         Matching test results in go tests
-        go get github.com/stretchr/testify
+        $ go get github.com/stretchr/testify
 
         note*
             Added unit tests for account, entry and transfer db CRUD generated code, which use testQueries conn created in main_test 
         
-        go test ./...
+        $ go test ./...
 
 ===============================================================================================================================================
 6 -> SQL DB Txn
@@ -126,9 +126,9 @@
             thereby it must guard the foreign key constraint whilst updating the transfer record
             one potential solution is in query "select account for update",
             we must specify that pk won't be touched in "update account" query which is true also
-            # SELECT * FROM accounts WHERE id = $1 LIMIT 1 FOR NO KEY UPDATE;
+            $ SELECT * FROM accounts WHERE id = $1 LIMIT 1 FOR NO KEY UPDATE;
             Regenerate autogen code sqlc with updated account.sql
-            # make sqlc
+            $ make sqlc
 
             optimize running 2 queries @account{get-update} by having a single query @account{update}
 
@@ -174,28 +174,57 @@
 
         For an open mysql session,
             get mysql's current isolation level (default is repeatable read)
-            # select @transaction_isolation
+            $ select @transaction_isolation
 
             get mysql's global isolation level
-            # select @global.transaction_isolation
+            $ select @global.transaction_isolation
 
             mysql change isolation level
-            # set session transaction isolation level read uncommitted;
-            # set session transaction isolation level read committed;
-            # set session transaction isolation level repeatable read;
-            # set session transaction isolation level serializable read;
+            $ set session transaction isolation level read uncommitted;
+            $ set session transaction isolation level read committed;
+            $ set session transaction isolation level repeatable read;
+            $ set session transaction isolation level serializable read;
         
          For an open postgres session,
             get postgres's current isolation level (default is read committed)
-            # show transaction isolation level
+            $ show transaction isolation level
 
             postgres change isolation level - at txn level
-            # begin
-            # set transaction isolation level read uncommitted;
-            # set transaction isolation level read committed;
-            # set transaction isolation level repeatable read;
-            # set transaction isolation level serializable read;
+            $ begin
+            $ set transaction isolation level read uncommitted;
+            $ set transaction isolation level read committed;
+            $ set transaction isolation level repeatable read;
+            $ set transaction isolation level serializable read;
 
+===============================================================================================================================================
+10 -> CI with Github Actions
+
+        Create your yml file in .github/workflows for running go tests written till now
+        For this, you must have the dependencies like golang, golang-migrate-binary, dockerized-postgres
+        Then you checkout code, run migrateup and go build/test 
+        
+        github action for postgres reference
+        https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers
+
+        golang migrate CLI here - find the tar for linux-amd in releases
+        https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
+
+===============================================================================================================================================
+11 -> REST with Gin
+
+        Install gin package
+        $ go get -u github.com/gin-gonic/gin
+
+        Gin validator package - for validating requests and picking data
+        BODY_PARAMS  -> ctx.ShouldBind
+        URI_PARAMS   -> ctx.ShouldBindUri
+        QUERY_PARAMS -> ctx.ShouldBindQuery
+
+        Gin send reponse -> use ctx.JSON()
+
+        Gin return key-value pairs -> use gin.H (example: in errorResponse)
+
+===============================================================================================================================================
 
 
 

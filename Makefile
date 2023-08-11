@@ -3,15 +3,19 @@ postgres:
 
 createdb:
 	docker exec -it simple-bank-db createdb --username=root --owner=root simple_bank
+	docker exec -it simple-bank-db createdb --username=root --owner=root simple_bank_test
 
 dropdb:
 	docker exec -it simple-bank-db dropdb simple_bank
+	docker exec -it simple-bank-db dropdb simple_bank_test
 
 migrateup:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank_test?sslmode=disable" -verbose up
 
 migratedown:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank_test?sslmode=disable" -verbose down
 
 sqlc:
 	sqlc generate
@@ -19,4 +23,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
+server:
+	go run main.go
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test server

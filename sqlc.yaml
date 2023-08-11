@@ -11,3 +11,4 @@ packages:
     emit_prepared_queries: false
     emit_interface: false # might be useful in testing later
     emit_exact_table_names: false # generated structs singular if set to false
+    emit_empty_slices: true # initialises lists to be returned with empty list, prevents null 
