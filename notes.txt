@@ -224,11 +224,32 @@
 
         Gin return key-value pairs -> use gin.H (example: in errorResponse)
 
+        TODO:   write routes for update, delete
+
 ===============================================================================================================================================
+12 -> Viper for configuring project using env-vars/files
 
+        Finds, loads, unmarshalls config from config file
+        Supports JSON, YAML, ENV, TOML, INI
+       
+        Reads config from env-vars/flags
+        Set default values, override existing values
 
+        Reads config from remote system, works for both unencrypted and encrypted values 
+        Supports Etc, Consul
 
+        Watch for changes in the config file, and notifies application about it
+        Re-read changed file, save any modifications made to config file
 
+        Install viper package
+        $ go get github.com/spf13/viper
+       
+        NOTE:   To unmarshall values, viper uses underneath -> $ go get github.com/mitchellh/mapstructure
+                So use mapstructure tags to specify name of each config field
+
+        TODO:   config live watching, reading config from remote system
+
+===============================================================================================================================================
 
 
 
