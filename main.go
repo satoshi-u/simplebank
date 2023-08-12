@@ -24,7 +24,7 @@ func main() {
 	}
 
 	// open conn to db
-	conn, err := sql.Open(config.DbDriver, config.DbSource)
+	conn, err := sql.Open(config.DbDriver, config.DbSourceMain)
 	if err != nil {
 		log.Fatal("cannot connect to db", err)
 	}
