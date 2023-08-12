@@ -250,6 +250,29 @@
         TODO:   config live watching, reading config from remote system
 
 ===============================================================================================================================================
+13 -> Test REST APIs with MockDB
 
+        Advantages:
+                -> Independent tests : No conflicts with isolated tests data 
+                -> Faster tests      : Reduce time spent in connecting/talking to a real db
+                -> 100% coverage     : Easily setup edge cases - unexpected errors, connection lost, etc.
 
+        Types of Mock DB:
+                -> fake db(memory)   : Implement a fake version of db, store data in memory
+                -> db stub(gomock)   : Generate and build stubs that return hard-coded values
 
+        Install mockgo package -> gets bianry in $GOPATH/bin
+        $ go install github.com/golang/mock/mockgen@v1.6.0
+
+        To generate mock for Store Interface(lists the TransferTx & Querier methods), use mockgen @<go-module>/<path-to-interface> <interface>
+        $ mockgen -destination db/mock/store.go -package mockdb github.com/web3dev6/simplebank/db/sqlc Store
+                NOTE: use -destination flag to generate code in a file, default codegen goes to stdout
+                NOTE: use -package flag to give a name of your choice for created package
+
+        For API tests:
+        Use *mockdb.MockStore created above, build stubs for Get API test-cases, and run these test-requests through a httptest/recorder (dummy server).
+        Them evaluate the response as per test-case.
+
+        TODO:   write API tests for all CRUD APIs on Account model
+
+        

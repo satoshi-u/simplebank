@@ -50,6 +50,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	// note* unit test fails if we don't call server.store.GetAccount
 	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -59,6 +60,8 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
+	// note* unit test fails if we account is not the same as expected
+	// account = db.Account{}
 
 	ctx.JSON(http.StatusOK, account)
 }
