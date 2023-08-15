@@ -13,7 +13,7 @@ func TestTransferTx(t *testing.T) {
 
 	account1 := createRandomAccount(t)
 	account2 := createRandomAccount(t)
-	fmt.Println(">> before:", account1.Balance, account2.Balance)
+	// fmt.Println(">> before:", account1.Balance, account2.Balance)
 
 	// run n concurrent transfer transactions - robust testing
 	n := 5
@@ -87,7 +87,7 @@ func TestTransferTx(t *testing.T) {
 		require.Equal(t, account2.ID, toAccount.ID)
 
 		// check accounts' balance
-		fmt.Println(">> tx:", fromAccount.Balance, toAccount.Balance)
+		// fmt.Println(">> tx:", fromAccount.Balance, toAccount.Balance)
 		diff1 := account1.Balance - fromAccount.Balance
 		diff2 := toAccount.Balance - account2.Balance
 		require.Equal(t, diff1, diff2)
@@ -104,7 +104,7 @@ func TestTransferTx(t *testing.T) {
 	require.NoError(t, err)
 	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
-	fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
+	// fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
 	require.Equal(t, account1.Balance-int64(n)*amount, updatedAccount1.Balance)
 	require.Equal(t, account2.Balance+int64(n)*amount, updatedAccount2.Balance)
 }
@@ -114,7 +114,7 @@ func TestTransferTxDeadlock(t *testing.T) {
 
 	account1 := createRandomAccount(t)
 	account2 := createRandomAccount(t)
-	fmt.Println(">> before:", account1.Balance, account2.Balance)
+	// fmt.Println(">> before:", account1.Balance, account2.Balance)
 
 	// run n concurrent transfer transactions
 	n := 10
@@ -153,7 +153,7 @@ func TestTransferTxDeadlock(t *testing.T) {
 	require.NoError(t, err)
 	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
-	fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
+	// fmt.Println(">> after:", updatedAccount1.Balance, updatedAccount2.Balance)
 
 	require.Equal(t, account1.Balance, updatedAccount1.Balance)
 	require.Equal(t, account2.Balance, updatedAccount2.Balance)

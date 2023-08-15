@@ -317,3 +317,15 @@
         In Makefile, add migrateup1 & migratedown1 to up/down 1 sequential migration at a time
 
 ===============================================================================================================================================
+16 -> sqlc generate for user.sql and handle Db errors in Go
+
+        Run "make sqlc" to create user.sql.go which has create-user & get-user method on *Queries, thereby SQLStore
+        Also, these methods were added in the Queries interface
+        Now, also run "make mock" for mockgen to add these new methods in MockStore which mocks Store
+
+        Write new user.sql.go db-tests in user_test.go (first write a createRandomUser func)
+        Correct db/account.sql.go db-tests in db/account_test.go (must use createRandomUser to create a user, and then use that username as owner in creating acocunt, or else FK constraint fails tests)
+        For now, api/account.go api-tests in api/account_test.go don't fail because of FK constraint, because there is no sql db, it's a mock store underneath
+
+===============================================================================================================================================
+17 ->
