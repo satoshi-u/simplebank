@@ -52,7 +52,9 @@
         Install cli golang-migrate
         $ brew install golang-migrate
 
-        create migrate dir for project
+        create <init_schema> named migration for project with flags
+                -seq : uses a sequential number as migration filename's prefix
+                -dir : output dir where migration files are saved
         $ migrate create -ext sql -dir db/migration -seq init_schema
 
         run migrate up/down (included in makefile)
@@ -293,4 +295,25 @@
 
         TODO:   write API tests for different scenarios in TransferTx 
 
+===============================================================================================================================================
+15 -> Users table in DB with new migration
+
+        Edit the diagram @ https://dbdiagram.io/d/6443ae366b3194705103b899
+                -> to include the users table, and added a FK contraint between username in user-table to owner in account-table
+                   now, a user can have multiple accounts
+                -> also added a composite unique index for owner and currency in account-table so that a user can have only one account in one currency
+                -> download the exported PostgreSQL file
         
+        Create <add_user_schema> named migration for project with flags
+                -seq : uses a sequential number as migration filename's prefix
+                -dir : output dir where migration files are saved
+        $ migrate create -ext sql -dir db/migration -seq add_user_schema
+
+        Copy from downloaded .sql file to add_user_schema migration up .sql 
+                -> the command to create users table and add FK/UNIQUE constraints
+        Copy from downloaded .sql file to add_user_schema migration down .sql 
+                -> the command remove FK/UNIQUE constraints, and drop users table
+
+        In Makefile, add migrateup1 & migratedown1 to up/down 1 sequential migration at a time
+
+===============================================================================================================================================
