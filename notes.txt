@@ -275,4 +275,22 @@
 
         TODO:   write API tests for all CRUD APIs on Account model
 
+===============================================================================================================================================
+14 -> Transfer API with Custom validation on currency
+
+        using Gin's custom validator:
+        https://gin-gonic.com/docs/examples/custom-validators/ 
+        which uses:
+        https://github.com/go-playground/validator/
+
+        NOTE:   Also wrote in server.go, before starting server, check if any accounts in db.Store 
+                If not, create 10 accounts
+                *(For this, added GetCountForAccounts in account.sql, and ran 
+                        $ make sqlc - to add corresponding method in *Queries and also add in Querier interface while emitting
+                        $ make mock - to add corresponding mock method in mockdb's mockStore
+                )
+        NOTE:  Also currencies-supported now in a central place -> in util.currency.go
+
+        TODO:   write API tests for different scenarios in TransferTx 
+
         

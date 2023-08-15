@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 
@@ -10,11 +11,9 @@ import (
 	"github.com/web3dev6/simplebank/util"
 )
 
-// const (
-// 	dbDriver      = "postgres"
-// 	dbSource      = "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable"
-// 	serverAddress = "0.0.0.0:8080"
-// )
+const (
+	numTestAccounts = 10
+)
 
 func main() {
 	// load config from app.env
@@ -32,6 +31,28 @@ func main() {
 	// create store, and then server
 	store := db.NewStore(conn)
 	server := api.NewServer(store)
+
+	// create some accounts if none exists in db
+	count, err := store.GetCountForAccounts(context.Background())
+	if err != nil {
+		log.Fatal("error in getting count for accounts from db.store")
+	}
+	if count == 0 {
+		log.Printf("store empty! Creating some accounts before starting server...")
+		var accounts = []db.Account{}
+		for i := 0; i < numTestAccounts; i++ {
+			account, err := store.CreateAccount(context.Background(), db.CreateAccountParams{
+				Owner:    util.RandomOwner(),
+				Balance:  util.RandomBalance(),
+				Currency: util.RandomCurrency()},
+			)
+			if err != nil {
+				log.Fatal("error in creating accounts")
+			}
+			accounts = append(accounts, account)
+		}
+		log.Printf("num (accounts created) = %d\n", len(accounts))
+	}
 
 	// start server
 	err = server.Start(config.ServerAddress)

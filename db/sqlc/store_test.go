@@ -27,8 +27,8 @@ func TestTransferTx(t *testing.T) {
 		go func() {
 			ctx := context.WithValue(context.Background(), txKey, txName)
 			result, err := store.TransferTx(ctx, TransferTxParams{
-				FromAccountId: account1.ID,
-				ToAccountId:   account2.ID,
+				FromAccountID: account1.ID,
+				ToAccountID:   account2.ID,
 				Amount:        amount,
 			})
 			errs <- err
@@ -123,19 +123,19 @@ func TestTransferTxDeadlock(t *testing.T) {
 	// channel to check for deadlock error is sufficient
 	errs := make(chan error)
 	for i := 0; i < n; i++ {
-		fromAccountID := account1.ID
-		toAccountID := account2.ID
+		FromAccountID := account1.ID
+		ToAccountID := account2.ID
 		// if odd, change order - half txns on reverse order
 		if i%2 == 1 {
-			fromAccountID = account2.ID
-			toAccountID = account1.ID
+			FromAccountID = account2.ID
+			ToAccountID = account1.ID
 		}
 		txName := fmt.Sprintf("tx %d", i+1)
 		go func() {
 			ctx := context.WithValue(context.Background(), txKey, txName)
 			_, err := store.TransferTx(ctx, TransferTxParams{
-				FromAccountId: fromAccountID,
-				ToAccountId:   toAccountID,
+				FromAccountID: FromAccountID,
+				ToAccountID:   ToAccountID,
 				Amount:        amount,
 			})
 			errs <- err

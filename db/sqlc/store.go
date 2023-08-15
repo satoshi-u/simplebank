@@ -41,8 +41,8 @@ func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) erro
 
 // TransferTxParams contains the input parameters of the transfer transaction
 type TransferTxParams struct {
-	FromAccountId int64 `json:"from_account_id"`
-	ToAccountId   int64 `json:"to_account_id"`
+	FromAccountID int64 `json:"from_account_id"`
+	ToAccountID   int64 `json:"to_account_id"`
 	Amount        int64 `json:"amount"`
 }
 
@@ -71,8 +71,8 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// transfer
 		fmt.Println(txName, "create Transfer")
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
-			FromAccountID: arg.FromAccountId,
-			ToAccountID:   arg.ToAccountId,
+			FromAccountID: arg.FromAccountID,
+			ToAccountID:   arg.ToAccountID,
 			Amount:        arg.Amount,
 		})
 		if err != nil {
@@ -82,7 +82,7 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// from entry
 		fmt.Println(txName, "create FromEntry")
 		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.FromAccountId,
+			AccountID: arg.FromAccountID,
 			Amount:    -arg.Amount,
 		})
 		if err != nil {
@@ -92,7 +92,7 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// to entry
 		fmt.Println(txName, "create ToEntry")
 		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.ToAccountId,
+			AccountID: arg.ToAccountID,
 			Amount:    arg.Amount,
 		})
 		if err != nil {
@@ -101,13 +101,13 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 
 		// get account ->  update from accounts' balance
 		// fmt.Println(txName, "get accountFrom")
-		// accountFrom, err := q.GetAccountForUpdate(ctx, arg.FromAccountId)
+		// accountFrom, err := q.GetAccountForUpdate(ctx, arg.FromAccountID)
 		// if err != nil {
 		// 	return err
 		// }
 		// fmt.Println(txName, "update accountFrom")
 		// result.FromAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
-		// 	ID:      arg.FromAccountId,
+		// 	ID:      arg.FromAccountID,
 		// 	Balance: accountFrom.Balance - arg.Amount,
 		// })
 		// if err != nil {
@@ -116,13 +116,13 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 
 		// get account ->  update to accounts' balance
 		// fmt.Println(txName, "get accountTo")
-		// accountTo, err := q.GetAccountForUpdate(ctx, arg.ToAccountId)
+		// accountTo, err := q.GetAccountForUpdate(ctx, arg.ToAccountID)
 		// if err != nil {
 		// 	return err
 		// }
 		// fmt.Println(txName, "update accountTo")
 		// result.ToAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
-		// 	ID:      arg.ToAccountId,
+		// 	ID:      arg.ToAccountID,
 		// 	Balance: accountTo.Balance + arg.Amount,
 		// })
 		// if err != nil {
@@ -130,15 +130,15 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 		// }
 
 		// update accounts' balance in a consistent order (lower account id first) - avoid deadlock
-		if arg.FromAccountId < arg.ToAccountId {
+		if arg.FromAccountID < arg.ToAccountID {
 			// update fromAccount first as it is lower account id here
-			result.FromAccount, result.ToAccount, err = addAmountInOrder(ctx, q, arg.FromAccountId, -arg.Amount, arg.ToAccountId, arg.Amount)
+			result.FromAccount, result.ToAccount, err = addAmountInOrder(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
 			if err != nil {
 				return err
 			}
 		} else {
 			// update toAccount first as it is lower account id here
-			result.ToAccount, result.FromAccount, err = addAmountInOrder(ctx, q, arg.ToAccountId, arg.Amount, arg.FromAccountId, -arg.Amount)
+			result.ToAccount, result.FromAccount, err = addAmountInOrder(ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
 			if err != nil {
 				return err
 			}

@@ -85,6 +85,17 @@ func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, e
 	return i, err
 }
 
+const getCountForAccounts = `-- name: GetCountForAccounts :one
+SELECT COUNT(*) FROM accounts
+`
+
+func (q *Queries) GetCountForAccounts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCountForAccounts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const listAccounts = `-- name: ListAccounts :many
 SELECT id, owner, balance, currency, created_at
 FROM accounts

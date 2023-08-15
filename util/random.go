@@ -8,7 +8,7 @@ import (
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
-var currencies = []string{"EUR", "USD", "INR"}
+var currencies = []string{EUR, USD, INR}
 
 // init runs every time a package is used
 func init() {
