@@ -358,6 +358,7 @@
 ===============================================================================================================================================
 18  -> Unit Tests with custom gomock matcher
 
-        Any api-test until now, for POST request, expects gomock.Any() as args in store methods like CreateUser, CreateAccount
-        We should be able to explicitly validate these args as well
+        api-tests for POST requests until now, accept any {gomock.Any()} arg for store methods like CreateUser, CreateAccount
+        We should be able to explicitly validate these arg as well in UTs
+        These store methods can't be called with "any" arg
 

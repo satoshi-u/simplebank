@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -17,8 +19,44 @@ import (
 	"github.com/web3dev6/simplebank/util"
 )
 
+type eqCreateUserParamsMatcher struct {
+	arg      db.CreateUserParams
+	password string
+}
+
+// passes iff -> password in request body of test-case gets hashed -> and CreateUser is called with corresponding db.CreateUserParams arg
+func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
+	// convert interface to expected type first
+	arg, ok := x.(db.CreateUserParams)
+	if !ok {
+		return false
+	}
+
+	// e.password & arg.HashedPassword are coming from CreateUser exec context
+	// (after password is hashed, and CreateUser is called with db.CreateUserParams, which includes hashedPassword)
+	err := util.CheckPassword(e.password, arg.HashedPassword)
+	if err != nil {
+		return false
+	}
+	e.arg.HashedPassword = arg.HashedPassword
+
+	// extra check to ensure- arg in our matcher struct is now same as the arg that was passed in invocation context
+	return reflect.DeepEqual(e.arg, x)
+}
+
+func (e eqCreateUserParamsMatcher) String() string {
+	return fmt.Sprintf("maches arg %v and password %v", e.arg, e.password)
+}
+
+func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
+	return eqCreateUserParamsMatcher{arg, password}
+}
+
 func TestCreateUserAPI(t *testing.T) {
 	user, password := randomUser(t)
+	// note* passing hashedPassword in CreateUser arg fails the test as in test exec, a new hashPassword is created and match fails
+	// hashedPassword, err := util.HashPassword(password)
+	// require.NoError(t, err)
 
 	// checkResponse can have the same testing context {t *testing.T of TestCreateUserAPI} across all test-cases
 	// note* In account_test, checkResponse signature had separate {t *testing.T}
@@ -38,7 +76,11 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUser(gomock.Any(), EqCreateUserParams(db.CreateUserParams{
+						Username: user.Username,
+						FullName: user.FullName,
+						Email:    user.Email,
+					}, password)).
 					Times(1).
 					Return(user, nil)
 			},
