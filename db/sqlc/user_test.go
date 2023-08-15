@@ -10,14 +10,17 @@ import (
 )
 
 func createRandomUser(t *testing.T) User {
+	hashedPassword, err := util.HashPassword(util.RandomString(6)) // can be hashed once more and both stored
+	require.NoError(t, err)
+
 	arg := CreateUserParams{
 		Username:       util.RandomOwner(),
-		HashedPassword: "secret", // todo generate a random pw and hash woth bcrypt
+		HashedPassword: hashedPassword,
 		FullName:       util.RandomOwner(),
 		Email:          util.RandomEmail(),
 	}
-	user, err := testQueries.CreateUser(context.Background(), arg)
 
+	user, err := testQueries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
 	require.Equal(t, arg.Username, user.Username)

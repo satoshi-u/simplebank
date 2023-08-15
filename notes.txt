@@ -328,4 +328,14 @@
         For now, api/account.go api-tests in api/account_test.go don't fail because of FK constraint, because there is no sql db, it's a mock store underneath
 
 ===============================================================================================================================================
-17 ->
+17 -> Hash password in Go with Bcrypt
+
+        Added util/password.go and corresponding util/password_test.go
+                -> uses golang's bcrypt to hash/check passwords
+                -> used this util methods to create password in db/user_test.go and ran UTs successfully
+
+        Added api/user.go to create & get user in users table with proper validations & error handling
+        Note:   Hid hashedPassword in response by creating a new struct 
+
+===============================================================================================================================================
+18 -> 
