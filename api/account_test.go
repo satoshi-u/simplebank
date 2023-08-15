@@ -19,7 +19,8 @@ import (
 
 func TestGetAccountApi(t *testing.T) {
 	// test account to get
-	account := randomAccount()
+	user, _ := randomUser(t)
+	account := randomAccount(user.Username)
 
 	// initilalise ctrl and store
 	// New in go1.14+, if you are passing a *testing.T into this function you no
@@ -52,7 +53,8 @@ func TestGetAccountApi(t *testing.T) {
 
 func TestGetAccountApiWithFullCoverage(t *testing.T) {
 	// test account to get
-	account := randomAccount()
+	user, _ := randomUser(t)
+	account := randomAccount(user.Username)
 
 	// define test-cases here
 	testcases := []struct {
@@ -76,7 +78,7 @@ func TestGetAccountApiWithFullCoverage(t *testing.T) {
 			name:      "NotFound",
 			accountID: account.ID,
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(db.Account{}, sql.ErrNoRows)
+				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(db.Account{}, db.ErrRecordNotFound) // db.ErrRecordNotFound is classified as 404 Error
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -137,10 +139,10 @@ func TestGetAccountApiWithFullCoverage(t *testing.T) {
 	}
 }
 
-func randomAccount() db.Account {
+func randomAccount(owner string) db.Account {
 	return db.Account{
 		ID:       util.RandomInt(1, 1000),
-		Owner:    util.RandomOwner(),
+		Owner:    owner,
 		Balance:  util.RandomBalance(),
 		Currency: util.RandomCurrency(),
 	}

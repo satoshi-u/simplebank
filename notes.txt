@@ -337,5 +337,27 @@
         Added api/user.go to create & get user in users table with proper validations & error handling
         Note:   Hid hashedPassword in response by creating a new struct 
 
+        Add pgx to your Go modules:
+        $ go get github.com/jackc/pgx/v5
+        Write db errors in a common db/error.go file, to be used in api-tests
+                -> ErrRecordNotFound
+                -> ErrUniqueViolation 
+
+        Added unit tests for api/user.go in api/user_test.go 
+                TestCreateUserAPI :  
+                -> OK
+                -> InternalError (sql.ErrConnDone)
+                -> DuplicateUsername (db.ErrUniqueViolation)
+                -> InvalidUsername
+                -> InvalidEmail
+                -> TooShortPassword
+                Note:   func checkResponse :
+                        can have the same parent testing context {t *testing.T} across all test-cases, like in TestGetAccountApiWithFullCoverage
+                        or can have separate testing contexts {t *testing.T} across all test-cases, like in TestCreateUserAPI
+
 ===============================================================================================================================================
-18 -> 
+18  -> Unit Tests with custom gomock matcher
+
+        Any api-test until now, for POST request, expects gomock.Any() as args in store methods like CreateUser, CreateAccount
+        We should be able to explicitly validate these args as well
+
