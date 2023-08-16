@@ -362,3 +362,35 @@
         We should be able to explicitly validate these arg as well in UTs
         These store methods can't be called with "any" arg
 
+        Wrote a custom gomock Matcher for CreateUser api-test to 
+                -> validate the arg with which store method is invoked
+                -> validate the steps right from request capture till store method invocation
+                Note:   took ref from eqMatcher in gomock
+
+===============================================================================================================================================
+19  -> Token Based Authentication - JWT, PASETO
+
+        Summary : PASETO is more secure and updated version of JWT
+                  Here you select version, and not alogrithms 
+                  It has stronger alogrithms for both local(symmetric-key-en) & public(asymmetric-key-en)
+                  Also, algorithm is not specified in header here, prevents attacks, unlike in JWT
+                  For local, everything in the token is encrypted and authenticated with a secret key using a strong AEAD - prevents reading as well as tampering, JWT only encodes payload and signs
+                  For public, it is similar to JWT, basically encodes the data, and signs with pvt key, but with latest crypto algorithms
+
+        Paseto Token : 
+                -> 1st part is paseto verision
+                -> 2nd part is purpose of the token - local or public
+                -> 3rd part is main content or payload data of the token
+                    [local] 
+                        It is encrypted with secret-key in case of local, once you decrypt, you get
+                        Body                    -> payload body (e.g a data field maybe and an exp time field)
+                        Nonce                   -> used in encryption as well as message authentication process
+                        Authentication Tag      -> to authenticate the encrypted message and its associated unencrypted data (version, purpose, footer of token)
+                    [public] 
+                        It is simply encoded, once you decode, there are 2 parts
+                        Body                    -> payload body (e.g a data field maybe and an exp time field)
+                        Signature               -> signature of the token(signed by issuer's pvt key) which can be verified by the issuer's public key
+                -> 4th part (optional) is Footer and you can store any public info in Footer, won't be encrypted but base64 encoded
+
+===============================================================================================================================================
+20  -> Token Based Authentication - JWT, PASETO
