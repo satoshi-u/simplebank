@@ -393,4 +393,25 @@
                 -> 4th part (optional) is Footer and you can store any public info in Footer, won't be encrypted but base64 encoded
 
 ===============================================================================================================================================
-20  -> Token Based Authentication - JWT, PASETO
+20  -> JWT & PASETO in Golang
+
+        Create a Maker interface with access token methods - CreateToken & VerifyToken
+        Can be Implemented as JWT or PASETO
+
+        Install google's uuid for making each created token unique (even within a user) and store it in Payload struct
+        $ go get github.com/google/uuid
+        Install go JWT package for implementing Maker with JWT
+        $ go get -u github.com/golang-jwt/jwt/v5
+        Install go PASETO package for implementing Maker with PASETO
+        $ go get -u github.com/o1egl/paseto
+
+        Note:   Pay attention to differnt types of error scenarios
+                An extra JWTPayload struct had to be included along with Payload to adjust for *jwt.RegisteredClaims - must be implemented for jwt payload
+                Instead of running Payload.Valid like in PASETO VerifyToken, JWT uses inbuilt validation provided by including *jwt.RegisteredClaims 
+
+        TODO:   RS256 Signing Algorithm in JWT and UTs for it
+
+===============================================================================================================================================
+21  ->
+
+        
