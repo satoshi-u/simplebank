@@ -63,7 +63,7 @@ func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 	err = payload.Valid()
 	if err != nil {
 		// fmt.Println(err)
-		// If there is an error in validating the payload(check expirey), return that error
+		// If there is an error in validating the payload(check expiry), return that error
 		return nil, err
 	}
 

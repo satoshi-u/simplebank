@@ -26,6 +26,9 @@ sqlc:
 	sqlc generate
 
 test:
+	go test -short -cover ./...
+
+test-verbose:
 	go test -v -cover ./...
 
 server:

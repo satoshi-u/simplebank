@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"net/http"
 
@@ -54,7 +55,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 	// note* unit test fails if we don't call server.store.GetAccount
 	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) {
+		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}

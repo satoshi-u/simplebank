@@ -87,3 +87,19 @@ func TestInvalidPasetoTokenInvalidPayload(t *testing.T) {
 		}, ": "))
 	require.Nil(t, payload)
 }
+
+// Test VerifyToken for token whose tokenString, symmetricKey, and payload is known
+// func TestPasetoVerifyToken(t *testing.T) {
+// 	maker, err := NewPasetoMaker("12345678901234567890123456789012")
+// 	require.NoError(t, err)
+// 	token := "v2.local.TOH11_leZ5mRXv-B_M6nlV8rG3QLkYxvVjNpJAnSsEmR49YF-pVDmMhOMoji747OOQSyG--g3py6jdraruNeHLFcwV1bkPimNIM3IMca6AeIa67BgJe0MqZrPemvvHAcOdWq8UjPWW86KftQ9DZOZZnkIv5m-gpZudVqBzIrWJPvC3IyF3TDl9O5qJLizQ0oLAIgp8Furd64_i3iVCceG9u3jes6xmfNQA6guKTl0yrt7JH_urODN24c3G-mfAwP88jHMQ4m38e5KuySxYc.bnVsbA"
+// 	payload, err := maker.VerifyToken(token)
+
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, payload)
+
+// 	require.Equal(t, payload.ID.String(), "1dd8bf50-5971-404c-bb0c-9a946d226071")
+// 	require.Equal(t, payload.Username, "sarthakxalts")
+// 	require.Equal(t, payload.IssuedAt.String(), "2023-08-18 20:28:15.998132 +0530 IST")
+// 	require.Equal(t, payload.ExpiresAt.String(), "2023-08-18 20:43:15.998132 +0530 IST")
+// }

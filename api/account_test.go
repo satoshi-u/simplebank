@@ -32,7 +32,7 @@ func TestGetAccountApi(t *testing.T) {
 
 	// start test server
 	// note* we dont have to start a real http server, use recorder from httptest package insted of server.listen
-	server := NewServer(store)
+	server := newTestServer(t, store) // using newTestServer instead of NewServer
 	recorder := httptest.NewRecorder()
 
 	// create url and GET request
@@ -120,7 +120,7 @@ func TestGetAccountApiWithFullCoverage(t *testing.T) {
 
 			// start test server
 			// note* we dont have to start a real http server, use recorder from httptest package insted of server.listen
-			server := NewServer(store)
+			server := newTestServer(t, store) // using newTestServer instead of NewServer
 			recorder := httptest.NewRecorder()
 
 			// create url and GET request

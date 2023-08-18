@@ -24,12 +24,15 @@ func main() {
 	// open conn to db
 	conn, err := sql.Open(config.DbDriver, config.DbSourceMain)
 	if err != nil {
-		log.Fatal("cannot connect to db", err)
+		log.Fatal("cannot connect to db:", err)
 	}
 
 	// create store, and then server
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create server:", err)
+	}
 
 	// create some accounts if none exists in db
 	// count, err := store.GetCountForAccounts(context.Background())
@@ -56,6 +59,6 @@ func main() {
 	// start server
 	err = server.Start(config.ServerAddress)
 	if err != nil {
-		log.Fatal("cannot start server")
+		log.Fatal("cannot start server:", err)
 	}
 }

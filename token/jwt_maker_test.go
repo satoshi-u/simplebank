@@ -153,3 +153,19 @@ func TestInvalidJWTTokenInvalidPayload(t *testing.T) {
 		}, ": "))
 	require.Nil(t, payload)
 }
+
+// // Test VerifyToken for token whose tokenString, secretkey, and payload is known
+// func TestJwtVerifyToken(t *testing.T) {
+// 	maker, err := NewJWTMaker("12345678901234567890123456789012")
+// 	require.NoError(t, err)
+// 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjE5NmJlMGExLWRiMzgtNDZmOS1hZDA5LTUwN2Q5Y2IxMmE0OCIsInVzZXJuYW1lIjoiam9zaGlzYXIiLCJpc3N1ZWRfYXQiOiIyMDIzLTA4LTE4VDIwOjQwOjI4LjcyOTczNiswNTozMCIsImV4cGlyZXNfYXQiOiIyMDIzLTA4LTE4VDIwOjU1OjI4LjcyOTczNyswNTozMCIsImlzcyI6InNpbXBsZV9iYW5rIiwiZXhwIjoxNjkyMzcyMzI4LCJpYXQiOjE2OTIzNzE0MjgsImp0aSI6IjE5NmJlMGExLWRiMzgtNDZmOS1hZDA5LTUwN2Q5Y2IxMmE0OCJ9.a06Znww9bOvja9o1Jex8ANZP64Ng5gJwrD6SxUoUUvE"
+// 	payload, err := maker.VerifyToken(token)
+
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, payload)
+
+// 	require.Equal(t, "196be0a1-db38-46f9-ad09-507d9cb12a48", payload.ID.String())
+// 	require.Equal(t, "joshisar", payload.Username)
+// 	require.Equal(t, "2023-08-18 20:40:28.729736 +0530 IST", payload.IssuedAt.String())
+// 	require.Equal(t, "2023-08-18 20:55:28.729737 +0530 IST", payload.ExpiresAt.String())
+// }

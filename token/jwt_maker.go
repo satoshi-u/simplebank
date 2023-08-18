@@ -82,8 +82,6 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return nil, ErrInvalidToken
 	}
 
-	fmt.Println("jwtPayload", jwtPayload)
-
 	// get an instance of a validator
 	v := validator.New()
 	// call the `Struct` function passing in your payload
@@ -92,6 +90,14 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		// If there is any error in type JWTPayload struct validation, return ErrInvalidPayload
 		return nil, ErrInvalidPayload
 	}
+
+	err = jwtPayload.Valid()
+	if err != nil {
+		// fmt.Println(err)
+		// If there is an error in validating the payload(check expiry), return that error
+		return nil, err
+	}
+
 	// return payload
 	return &Payload{
 		ID:        jwtPayload.Payload.ID,
