@@ -405,9 +405,10 @@
         Install go PASETO package for implementing Maker with PASETO
         $ go get -u github.com/o1egl/paseto
 
-        Note:   Pay attention to differnt types of error scenarios
-                An extra JWTPayload struct had to be included along with Payload to adjust for *jwt.RegisteredClaims - must be implemented for jwt payload
-                Instead of running Payload.Valid like in PASETO VerifyToken, JWT uses inbuilt validation provided by including *jwt.RegisteredClaims 
+        Note:   -> Pay attention to differnt types of error scenarios
+                -> An extra JWTPayload struct had to be included along with Payload to adjust for *jwt.RegisteredClaims - must be implemented for jwt payload
+                -> Instead of running Payload.Valid like in PASETO VerifyToken, JWT uses inbuilt validation provided by including *jwt.RegisteredClaims 
+                -> Use go validator package to validate(the required tag) common Payload struct in both JWT & PASETO
 
         TODO:   RS256 Signing Algorithm in JWT and UTs for it
 

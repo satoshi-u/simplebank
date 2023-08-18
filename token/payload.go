@@ -37,8 +37,8 @@ func NewPayload(username string, duration time.Duration) (*Payload, error) {
 }
 
 type JWTPayload struct {
-	*Payload
-	*jwt.RegisteredClaims
+	Payload
+	jwt.RegisteredClaims
 }
 
 // NewJWTPayload creates a new jwt payload with specified username and duration
@@ -49,13 +49,13 @@ func NewJWTPayload(username string, duration time.Duration) (*JWTPayload, error)
 	}
 	// create jwtPayload
 	jwtPayload := &JWTPayload{
-		Payload: &Payload{
+		Payload: Payload{
 			ID:        tokenID,
 			Username:  username,
 			IssuedAt:  time.Now(),
 			ExpiresAt: time.Now().Add(duration),
 		},
-		RegisteredClaims: &jwt.RegisteredClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        tokenID.String(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),

@@ -1,18 +1,14 @@
 package token
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 const minSecretKeySize = 32
-
-var ErrInvalidSigningMethod = errors.New("token is not signed with HS256")
-var ErrInvalidPayload = errors.New("token payload not in expecteed format")
-var ErrInvalidToken = errors.New("token is invalid")
 
 // JWTMaker is a JSON Web Token maker - use symmetric-key algo to sign the function
 type JWTMaker struct {
@@ -29,13 +25,13 @@ func NewJWTMaker(secretkey string) (Maker, error) {
 
 // CreateToken creates a new token for a specific username and duration
 func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (string, error) {
-	payload, err := NewJWTPayload(username, duration)
+	jwtPayload, err := NewJWTPayload(username, duration)
 	if err != nil {
 		return "", err
 	}
 
-	// Declare the token with the algorithm used for signing, and the payload (which has an embedded JWT claim)
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+	// Declare the token with the algorithm used for signing, and the jwtPayload (which has an embedded JWT claim)
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwtPayload)
 
 	// Create the JWT string
 	// JWTs are commonly signed using one of two algorithms: HS256 (HMAC using SHA256) and RS256 (RSA using SHA256).
@@ -52,6 +48,9 @@ func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (str
 
 // VerifyToken checks if the token is valid or not, if yes, return payload data in body of token
 func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
+	// Initialize a new instance of `Claims`
+	jwtPayload := &JWTPayload{}
+
 	// jwt.KeyFunc to pass the JWTMaker's secret key in jwt.ParseWithClaims
 	keyfunc := func(token *jwt.Token) (interface{}, error) {
 		// type assertion to check if token was signed with jwt..SigningMethodHS256 by
@@ -70,7 +69,7 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	// or if the signature does not match
 	// JWTs are commonly signed using one of two algorithms: HS256 (HMAC using SHA256) and RS256 (RSA using SHA256).
 	// Here we verify those only signed with HS256
-	jwtToken, err := jwt.ParseWithClaims(token, &JWTPayload{}, keyfunc)
+	jwtToken, err := jwt.ParseWithClaims(token, jwtPayload, keyfunc)
 	if err != nil {
 		// fmt.Println(err)
 		// If there is an error in signing the JWT, return that error
@@ -80,13 +79,14 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return nil, ErrInvalidToken
 	}
 
-	// get jwtPayload
-	jwtPayload, ok := jwtToken.Claims.(JWTPayload)
-	if !ok {
-		// If there is an error in type assertion of payload from token, return ErrInvalidPayload
+	// get an instance of a validator
+	v := validator.New()
+	// call the `Struct` function passing in your payload
+	err = v.Struct(jwtPayload)
+	if err != nil {
+		// If there is any error in type JWTPayload struct validation, return ErrInvalidPayload
 		return nil, ErrInvalidPayload
 	}
-
 	// return payload
 	return &Payload{
 		ID:        jwtPayload.Payload.ID,
