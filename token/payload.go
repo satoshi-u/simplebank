@@ -36,9 +36,12 @@ func NewPayload(username string, duration time.Duration) (*Payload, error) {
 	return payload, nil
 }
 
+// Note: If you provide a custom claim implementation that embeds one of the standard claims (such as RegisteredClaims),
+// make sure that a) you either embed a non-pointer version of the claims or b) if you are using a pointer, allocate the
+// proper memory for it before passing in the overall claims, otherwise you might run into a panic.
 type JWTPayload struct {
-	Payload
-	jwt.RegisteredClaims
+	*Payload             // embedded struct pointer-type
+	jwt.RegisteredClaims // embedded struct non-pointer-type (recommended)
 }
 
 // NewJWTPayload creates a new jwt payload with specified username and duration
@@ -49,7 +52,7 @@ func NewJWTPayload(username string, duration time.Duration) (*JWTPayload, error)
 	}
 	// create jwtPayload
 	jwtPayload := &JWTPayload{
-		Payload: Payload{
+		Payload: &Payload{
 			ID:        tokenID,
 			Username:  username,
 			IssuedAt:  time.Now(),

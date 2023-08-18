@@ -48,8 +48,11 @@ func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (str
 
 // VerifyToken checks if the token is valid or not, if yes, return payload data in body of token
 func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
-	// Initialize a new instance of `Claims`
-	jwtPayload := &JWTPayload{}
+	// Initialize a new instance of `JWTPayload`
+	jwtPayload := &JWTPayload{
+		Payload: &Payload{},
+		// RegisteredClaims: &jwt.RegisteredClaims{},
+	}
 
 	// jwt.KeyFunc to pass the JWTMaker's secret key in jwt.ParseWithClaims
 	keyfunc := func(token *jwt.Token) (interface{}, error) {
@@ -78,6 +81,8 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	if !jwtToken.Valid {
 		return nil, ErrInvalidToken
 	}
+
+	fmt.Println("jwtPayload", jwtPayload)
 
 	// get an instance of a validator
 	v := validator.New()
