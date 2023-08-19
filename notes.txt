@@ -413,6 +413,19 @@
         TODO:   RS256 Signing Algorithm in JWT and UTs for it
 
 ===============================================================================================================================================
-21  ->
+21  -> Implement authentication middleware and authorization rules in Golang using Gin
 
+        Middleware - checks for auth_header, if present and has expected auth_type and auth_token
+
+        Authorization Rules -
+                -> Get User          :       A logged in user can only view user details for himself/herself         :   Refactor API:GetUser
+
+                -> Create Account    :       A logged in user can only create account(s) for himself/herself         :   Refactor API:CreateAccount
+                -> Get Account       :       A   logged in user can only get an account that he/she owns               :   Refactor API:GetAccount        
+                -> List Accounts     :       A logged in user can only list accounts that belong to him/her          :   Refactor SQL:ListAccounts
+
+                -> Transfer Money    :       A logged in user can only send money from his/her owned account         :   Refactor API:TransferMoney
+
+        TODO:   UTs refactor for all APIs(account,transfer) by adding testcases which include different authorization use-cases
         
+===============================================================================================================================================

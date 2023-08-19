@@ -7,10 +7,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/web3dev6/simplebank/db/sqlc"
+	"github.com/web3dev6/simplebank/token"
 )
 
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
+	// Owner    string `json:"owner" binding:"required"` - It comes via auth payload - filled by auth middleware
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
@@ -21,8 +22,9 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -65,6 +67,12 @@ func (server *Server) getAccount(ctx *gin.Context) {
 	// note* unit test fails if we account is not the same as expected
 	// account = db.Account{}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrFetchingUnauthorizedAccount))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
@@ -80,7 +88,9 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}

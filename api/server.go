@@ -55,17 +55,20 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 func (server *Server) setupRouter() {
 	// Default Gin router
 	router := gin.Default()
+	// authRoutes filter requests through our authMiddleware returned authHandler first
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
-	// add routes to router
+	// add public routes to router
 	router.POST("/users", server.createUser)
-	router.GET("/users/:username", server.getUser)
 	router.POST("/users/login", server.loginUser)
 
-	router.POST("/accounts", server.createAccount)
-	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccounts)
+	// add protected routes to authRoutes
+	authRoutes.GET("/users", server.getUserDetails)
+	authRoutes.POST("/accounts", server.createAccount)
+	authRoutes.GET("/accounts/:id", server.getAccount)
+	authRoutes.GET("/accounts", server.listAccounts)
 
-	router.POST("/transfers", server.createTransfer)
+	authRoutes.POST("/transfers", server.createTransfer)
 
 	server.router = router
 }

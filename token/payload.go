@@ -1,15 +1,12 @@
 package token
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
-
-var ErrExpiredToken = errors.New("token has expired")
 
 // Payload contains custom payload data of the token
 // note* jwt.RegisteredClaims must be added in payload so that payload becomes a valid jwt claim

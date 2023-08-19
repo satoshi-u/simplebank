@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/web3dev6/simplebank/db/sqlc"
+	"github.com/web3dev6/simplebank/token"
 	"github.com/web3dev6/simplebank/util"
 )
 
@@ -69,18 +70,10 @@ func (server *Server) createUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-type getUserRequest struct {
-	Username string `uri:"username" binding:"required,alphanum"` // must be alpha-numeric with validator's inbuilt alphanum tag
-}
+func (server *Server) getUserDetails(ctx *gin.Context) {
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 
-func (server *Server) getUser(ctx *gin.Context) {
-	var req getUserRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	user, err := server.store.GetUser(ctx, req.Username)
+	user, err := server.store.GetUser(ctx, authPayload.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
