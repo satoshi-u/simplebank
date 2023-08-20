@@ -431,9 +431,7 @@
         TODO:   UTs refactor for all APIs(account,transfer) by adding testcases which include different authorization use-cases
         
 ===============================================================================================================================================
-
 -------------------------------------------- DOCKER, KUBERNETES, AWS SKIPPED FOR NOW (#22 - #36) --------------------------------------------
-
 ===============================================================================================================================================
 #37 -> User Session with Refresh Token
 
@@ -447,7 +445,31 @@
                 -> return created refresh token in response  
         
         Create POST tokens/renew_access to 
-                -> issue a new accessToken from refreshToken after all checks
+                -> issue a new accessToken from refreshToken after all checks pass
 
+        TODO:   write API tests for different scenarios in tokens_test.go 
+===============================================================================================================================================
+#32 -> Generate db-doc page and schema SQL dump from DBML using dbdocs.io
 
+        STEP-1  https://dbdiagram.io
+                Write dbml alongside ER diagram (online) 
+                Note:   Put the dbml from STEP-I inside doc/db.dbml file
 
+        STEP-2  https://dbdocs.io
+                Install dbdocs cli
+                        $ npm i -g dbdocs
+                Login via email/github
+                        $ dbdocs login
+                Generate db docs from dbml (offline) 
+                        $ dbdocs build doc/db.dbml
+                Secure project with password 
+                        $ dbdocs password --set secret --project simple_bank
+                Remove project
+                        $ dbdocs remove simple_bank
+
+        STEP-3  https://dbml.org 
+                Install dbml cli
+                        $ npm install -g @dbml/cli
+                Generate sql code from dbml (offline) 
+                        $ dbml2sql --postgres -o doc/schema.sql doc/db.dbml 
+===============================================================================================================================================

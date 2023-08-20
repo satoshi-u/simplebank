@@ -1,3 +1,6 @@
+SIMPLE_BANK_DB_URL=postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable
+SIMPLE_BANK_TEST_DB_URL=postgresql://root:secret@localhost:5431/simple_bank_test?sslmode=disable
+
 postgres:
 	docker run --name simple-bank-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
 	docker run --name simple-bank-db-test -p 5431:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
@@ -10,17 +13,17 @@ dropdb:
 	docker exec -it simple-bank-db-test dropdb simple_bank_test
 
 migrateup:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5431/simple_bank_test?sslmode=disable" -verbose up
+	migrate -path db/migration -database "$(SIMPLE_BANK_DB_URL)" -verbose up
+	migrate -path db/migration -database "$(SIMPLE_BANK_TEST_DB_URL)" -verbose up
 migrateup1 :
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose up 1
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5431/simple_bank_test?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "$(SIMPLE_BANK_DB_URL)" -verbose up 1
+	migrate -path db/migration -database "$(SIMPLE_BANK_TEST_DB_URL)" -verbose up 1
 migratedown:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5431/simple_bank_test?sslmode=disable" -verbose down
+	migrate -path db/migration -database "$(SIMPLE_BANK_DB_URL)" -verbose down
+	migrate -path db/migration -database "$(SIMPLE_BANK_TEST_DB_URL)" -verbose down
 migratedown1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down 1
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5431/simple_bank_test?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "$(SIMPLE_BANK_DB_URL)" -verbose down 1
+	migrate -path db/migration -database "$(SIMPLE_BANK_TEST_DB_URL)" -verbose down 1
 
 sqlc:
 	sqlc generate
@@ -37,4 +40,10 @@ server:
 mock:
 	mockgen -destination db/mock/store.go -package mockdb github.com/web3dev6/simplebank/db/sqlc Store
 
-.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown sqlc test server mock
+dbdocs:
+	dbdocs build doc/db.dbml
+
+dbschema:
+	dbml2sql --postgres -o doc/schema.sql doc/db.dbml   
+
+.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown sqlc test server mock dbdocs dbschema
