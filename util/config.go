@@ -9,13 +9,14 @@ import (
 // This config struct stores all configuration of the application
 // The values are read by viper from a config file or environment variables
 type Config struct {
-	DbDriver            string        `mapstructure:"DB_DRIVER"`
-	DbSourceMain        string        `mapstructure:"DB_SOURCE_MAIN"`
-	DbSourceTest        string        `mapstructure:"DB_SOURCE_TEST"`
-	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
-	TokenMakerType      string        `mapstructure:"TOKEN_MAKER_TYPE"`
-	TokenSymmetricKey   string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
-	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	DbDriver             string        `mapstructure:"DB_DRIVER"`
+	DbSourceMain         string        `mapstructure:"DB_SOURCE_MAIN"`
+	DbSourceTest         string        `mapstructure:"DB_SOURCE_TEST"`
+	ServerAddress        string        `mapstructure:"SERVER_ADDRESS"`
+	TokenMakerType       string        `mapstructure:"TOKEN_MAKER_TYPE"`
+	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
 // LoadConfig reads configuration from file if path exists or set/override configuration with env-vars if provided

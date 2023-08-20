@@ -1,10 +1,10 @@
 ===============================================================================================================================================
-1 -> Schema Essentials
+#1 -> Schema Essentials
 
         drew the schema here and get simple-bank.pdf/simple-bank.sql : https://dbdiagram.io/d/6443ae366b3194705103b899
 
 ===============================================================================================================================================
-2 -> Docker Essentials
+#2 -> Docker Essentials
 
         start postgres docker container
         $ docker run --name simple-bank-db -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:12-alpine
@@ -47,7 +47,7 @@
         makefile -> easy to setup in local for new folks in project
 
 ===============================================================================================================================================
-3 -> DB Migration Essentials
+#3 -> DB Migration Essentials
 
         Install cli golang-migrate
         $ brew install golang-migrate
@@ -62,7 +62,7 @@
         $ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
 
 ===============================================================================================================================================
-4 -> Generate golang CRUD from SQL
+#4 -> Generate golang CRUD from SQL
 
         use for doing low-level custom queries : https://pkg.go.dev/database/sql
         use for doing high-level queries : https://pkg.go.dev/gorm.io/gorm
@@ -83,7 +83,7 @@
         $ sqlc generate
 
 ===============================================================================================================================================
-5 -> Golang unit tests for db CRUD
+#5 -> Golang unit tests for db CRUD
 
         note*
             $ go get github.com/lib/pq
@@ -99,7 +99,7 @@
         $ go test ./...
 
 ===============================================================================================================================================
-6 -> SQL DB Txn
+#6 -> SQL DB Txn
 
         note*
             updated Store to have both Queries and sql.db both
@@ -108,7 +108,7 @@
             wrote unit test(s) for store 
 
 ===============================================================================================================================================
-7 -> DB Txn Lock & dealing with Deadlocks
+#7 -> DB Txn Lock & dealing with Deadlocks
 
         note*
             deadlocks happen because of concurrent txns in db
@@ -135,7 +135,7 @@
             optimize running 2 queries @account{get-update} by having a single query @account{update}
 
 ===============================================================================================================================================
-8 -> Avoid Deadlocks - keep order same
+#8 -> Avoid Deadlocks - keep order same
 
         note*
             Deadlock can still happen because of concurrent txns updating pair of same records in different order
@@ -144,7 +144,7 @@
             Application must acquire locks in a consistent order
 
 ===============================================================================================================================================
-9 -> Isolation Levels & Read Phenomenon
+#9 -> Isolation Levels & Read Phenomenon
 
         ACID -
                 Atomicity   : Either all operations complete successfully or txn fails and db left unchanged
@@ -199,7 +199,7 @@
             $ set transaction isolation level serializable read;
 
 ===============================================================================================================================================
-10 -> CI with Github Actions
+#10 -> CI with Github Actions
 
         Create your yml file in .github/workflows for running go tests written till now
         For this, you must have the dependencies like golang, golang-migrate-binary, dockerized-postgres
@@ -212,7 +212,7 @@
         https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 
 ===============================================================================================================================================
-11 -> REST with Gin
+#11 -> REST with Gin
 
         Install gin package
         $ go get -u github.com/gin-gonic/gin
@@ -226,10 +226,10 @@
 
         Gin return key-value pairs -> use gin.H (example: in errorResponse)
 
-        TODO:   write routes for update, delete
+        TODO:   write api-routes for account(update, delete)
 
 ===============================================================================================================================================
-12 -> Viper for configuring project using env-vars/files
+#12 -> Viper for configuring project using env-vars/files
 
         Finds, loads, unmarshalls config from config file
         Supports JSON, YAML, ENV, TOML, INI
@@ -252,7 +252,7 @@
         TODO:   config live watching, reading config from remote system
 
 ===============================================================================================================================================
-13 -> Test REST APIs with MockDB
+#13 -> Test REST APIs with MockDB
 
         Advantages:
                 -> Independent tests : No conflicts with isolated tests data 
@@ -278,7 +278,7 @@
         TODO:   write API tests for all CRUD APIs on Account model
 
 ===============================================================================================================================================
-14 -> Transfer API with Custom validation on currency
+#14 -> Transfer API with Custom validation on currency
 
         using Gin's custom validator:
         https://gin-gonic.com/docs/examples/custom-validators/ 
@@ -296,7 +296,7 @@
         TODO:   write API tests for different scenarios in TransferTx 
 
 ===============================================================================================================================================
-15 -> Users table in DB with new migration
+#15 -> Users table in DB with new migration
 
         Edit the diagram @ https://dbdiagram.io/d/6443ae366b3194705103b899
                 -> to include the users table, and added a FK contraint between username in user-table to owner in account-table
@@ -317,7 +317,7 @@
         In Makefile, add migrateup1 & migratedown1 to up/down 1 sequential migration at a time
 
 ===============================================================================================================================================
-16 -> sqlc generate for user.sql and handle Db errors in Go
+#16 -> sqlc generate for user.sql and handle Db errors in Go
 
         Run "make sqlc" to create user.sql.go which has create-user & get-user method on *Queries, thereby SQLStore
         Also, these methods were added in the Queries interface
@@ -328,7 +328,7 @@
         For now, api/account.go api-tests in api/account_test.go don't fail because of FK constraint, because there is no sql db, it's a mock store underneath
 
 ===============================================================================================================================================
-17 -> Hash password in Go with Bcrypt
+#17 -> Hash password in Go with Bcrypt
 
         Added util/password.go and corresponding util/password_test.go
                 -> uses golang's bcrypt to hash/check passwords
@@ -356,7 +356,7 @@
                         or can have separate testing contexts {t *testing.T} across all test-cases, like in TestCreateUserAPI
 
 ===============================================================================================================================================
-18  -> Unit Tests with custom gomock matcher
+#18  -> Unit Tests with custom gomock matcher
 
         api-tests for POST requests until now, accept any {gomock.Any()} arg for store methods like CreateUser, CreateAccount
         We should be able to explicitly validate these arg as well in UTs
@@ -368,7 +368,7 @@
                 Note:   took ref from eqMatcher in gomock
 
 ===============================================================================================================================================
-19  -> Token Based Authentication - JWT, PASETO
+#19  -> Token Based Authentication - JWT, PASETO
 
         Summary : PASETO is more secure and updated version of JWT
                   Here you select version, and not alogrithms 
@@ -393,7 +393,7 @@
                 -> 4th part (optional) is Footer and you can store any public info in Footer, won't be encrypted but base64 encoded
 
 ===============================================================================================================================================
-20  -> JWT & PASETO in Golang
+#20  -> JWT & PASETO in Golang
 
         Create a Maker interface with access token methods - CreateToken & VerifyToken
         Can be Implemented as JWT or PASETO
@@ -411,9 +411,11 @@
                 -> Use go validator package to validate(the required tag) common Payload struct in both JWT & PASETO
 
         TODO:   RS256 Signing Algorithm in JWT and UTs for it
+        TODO:   write API UTs for user(login)
+
 
 ===============================================================================================================================================
-21  -> Implement authentication middleware and authorization rules in Golang using Gin
+#21  -> Implement authentication middleware and authorization rules in Golang using Gin
 
         Middleware - checks for auth_header, if present and has expected auth_type and auth_token
 
@@ -429,3 +431,23 @@
         TODO:   UTs refactor for all APIs(account,transfer) by adding testcases which include different authorization use-cases
         
 ===============================================================================================================================================
+
+-------------------------------------------- DOCKER, KUBERNETES, AWS SKIPPED FOR NOW (#22 - #36) --------------------------------------------
+
+===============================================================================================================================================
+#37 -> User Session with Refresh Token
+
+        Create new migration for new "sessions" table as expected and run:
+        $ make migrateup1
+        $ make sqlc
+        $ make mock
+ 
+        Modify POST users/login to 
+                -> include session creation logic
+                -> return created refresh token in response  
+        
+        Create POST tokens/renew_access to 
+                -> issue a new accessToken from refreshToken after all checks
+
+
+

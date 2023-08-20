@@ -27,19 +27,19 @@ func NewPasetoMaker(symmetricKey string) (Maker, error) {
 }
 
 // CreateToken creates a new token for a specific username and duration
-func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (string, error) {
+func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (string, *Payload, error) {
 	payload, err := NewPayload(username, duration)
 	if err != nil {
-		return "", err
+		return "", payload, err
 	}
 
 	jwtTokenString, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
 	if err != nil {
 		// fmt.Println(err)
 		// If there is an error in encrypting the payload, return that error
-		return "", err
+		return "", payload, err
 	}
-	return jwtTokenString, nil
+	return jwtTokenString, payload, nil
 }
 
 // VerifyToken checks if the token is valid or not, if yes, return payload data in body of token
