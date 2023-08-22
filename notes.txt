@@ -539,7 +539,37 @@
                         2. Separate proxy server
                                 the http json request here will be trnaslated and forwarded to the grpc server via a network call                          
 ===============================================================================================================================================        
-#34 -> 
+#34 -> Define gRPC API and go-codegen with protobuf
 
+        Quickstart Go https://grpc.io/docs/languages/go/quickstart/
 
+        Install protoc:
+        $ brew install protobuf
+ 
+        Install the protocol compiler plugins for Go using the following commands:
+        $ go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+        $ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2  
 
+        api - write grpc api for create-user and login-user 
+
+        NOTE:
+                Message types(scalar) : https://protobuf.dev/programming-guides/proto3/#scalar 
+                
+                Field Numbers used to uniquely serialize/deserialize fields in message, numbers from 1 to 15 take only 1 byte to encode - smaller message size
+                
+                For resolving relative import errors, tell in protoc settings.json, to look in path "protos" instead of default "."
+                
+                Service SimpleBank is a unary gRPC service - write all protos in .proto files
+                
+                Codegen for go with  :
+                $ protoc --go_out=. --go_opt=paths=source_relative \
+                  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+                  helloworld/helloworld.proto
+                This generates corresponding .go files for .proto files, and one extra service_simple_bank_grpc.pb.go file, 
+                This file contains grpc server and client intefaces or stubs, based on which, we write our real implementaion
+                *** Use generated code to implemet the gRPC API service handler on the server side
+
+                go mod tidy - to download missing packages - google.golang.org/grpc 
+
+===============================================================================================================================================
+#35 -> 
