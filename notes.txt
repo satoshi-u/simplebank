@@ -473,3 +473,73 @@
                 Generate sql code from dbml (offline) 
                         $ dbml2sql --postgres -o doc/schema.sql doc/db.dbml 
 ===============================================================================================================================================
+#33 -> Intro to GRPC  
+
+        Basics:
+                The client can execute a remote procedure on the server 
+                        -> Can call it as if the server function is in client local codebase
+                The remote interaction code and all that stuff
+                        -> Handled by gRPC
+                The RPC APIs and their data structure code is automatically generated from Api-definition
+                        -> Using a special program called protocol buffer compiler (protobuf)
+                Supports multiple programming languages  
+                        -> From the same API-definition(proto), both server & client code can be generated 
+
+        Steps:
+                First, define RPC API(Service) & its Request-Response(Message) structure using Protobuf in a .proto file
+                Second, generate gRPC stubs in the language of your choice using protobuf compiler
+                Third, server side, implement the RPC handler
+                Fourth, client side, use the generated client stubs to make RPC calls to   server 
+          
+        Pros:
+                -> High performance with http/2 protocol
+                        transferring data in binary format
+                        multiplexing, which allows sending multiple requests through the same TCP connection
+                        header-compression 
+                        bi-directional communication between client and server
+                -> Strong API contract
+                        server and client, both share the same protobuf defintion of the API(RPC)
+                        where, the request-response data strcutures are strongly typed
+                -> Automatic code generation
+                        codes that serialize/deserialize data or transfer data between client & server are automaticlly generated
+                        the code can be in multiple languages
+
+        Types: 
+                -> Unary gRPC 
+                        client sends one single request, 
+                        server replies with one single response, 
+                        just like an http api 
+                -> Client streaming gRPC
+                        client sends a stream of multiple messages,
+                        server sends back one single response
+                -> Server streaming gRPC
+                        client sends a one single request, 
+                        server replies with a stream of multiple messages
+                -> Bi-directional streaming gRPC
+                        most complex,
+                        client and server will keep sending and receiving multiple messages,
+                        in parallel and with arbitrary order,
+                        flexible and no blocking, so no side needs to wait for the response from the other before sending the next messages  
+        
+         GRPC Gateway:
+                -> What is grpc gateway:
+                        Write server code once,
+                        Serve both grpc and http/json requests at the same time
+                        It is a plugin of protobuf that genrate HTTP proxy codes from protobuf definition
+                        So from protobuf codegen for client, both code for grpc-handling as well as http-handling is generated
+                        A normal grpc client will connec t directly to the grpc server to send a grpc request and receive a binary response
+                        An http client will connect to the gateway server to send an http request, 
+                        This http request is translated into grpc formated and forwarded to grpc service handler to be processed
+                        Also, the grpc response is trnslated back into json format before returning to the http client
+
+                -> Two types of translation:
+                        1. In-process translation 
+                                gateway can call the grpc handler directly in code, with no extra neetwork hashedPassword
+                                works only for unary grpc
+                        2. Separate proxy server
+                                the http json request here will be trnaslated and forwarded to the grpc server via a network call                          
+===============================================================================================================================================        
+#34 -> 
+
+
+
