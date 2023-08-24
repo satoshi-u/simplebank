@@ -38,7 +38,7 @@ func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (str
 	// Here we sign with HS256
 	tokenString, err := jwtToken.SignedString([]byte(maker.secretKey))
 	if err != nil {
-		// fmt.Println(err)
+		// log.Println(err)
 		// If there is an error in signing the JWT,  return that error
 		return "", jwtPayload.Payload, err
 	}
@@ -74,7 +74,7 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	// Here we verify those only signed with HS256
 	jwtToken, err := jwt.ParseWithClaims(token, jwtPayload, keyfunc)
 	if err != nil {
-		// fmt.Println(err)
+		// log.Println(err)
 		// If there is an error in signing the JWT, return that error
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
 
 	err = jwtPayload.Valid()
 	if err != nil {
-		// fmt.Println(err)
+		// log.Println(err)
 		// If there is an error in validating the payload(check expiry), return that error
 		return nil, err
 	}

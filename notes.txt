@@ -449,7 +449,7 @@
 
         TODO:   write API tests for different scenarios in tokens_test.go 
 ===============================================================================================================================================
-#32 -> Generate db-doc page and schema SQL dump from DBML using dbdocs.io
+#38 -> Generate db-doc page and schema SQL dump from DBML using dbdocs.io
 
         STEP-1  https://dbdiagram.io
                 Write dbml alongside ER diagram (online) 
@@ -473,7 +473,7 @@
                 Generate sql code from dbml (offline) 
                         $ dbml2sql --postgres -o doc/schema.sql doc/db.dbml 
 ===============================================================================================================================================
-#33 -> Intro to GRPC  
+#39 -> Intro to GRPC  
 
         Basics:
                 The client can execute a remote procedure on the server 
@@ -539,7 +539,7 @@
                         2. Separate proxy server
                                 the http json request here will be trnaslated and forwarded to the grpc server via a network call                          
 ===============================================================================================================================================        
-#34 -> Define gRPC API and go-codegen with protobuf
+#40 -> Define gRPC API and go-codegen with protobuf
 
         Quickstart Go https://grpc.io/docs/languages/go/quickstart/
 
@@ -564,7 +564,7 @@
                 Codegen for go with  :
                 $ protoc --go_out=. --go_opt=paths=source_relative \
                   --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-                  helloworld/helloworld.proto
+                  helloworld/helloworld.proto  
                 This generates corresponding .go files for .proto files, and one extra service_simple_bank_grpc.pb.go file, 
                 This file contains grpc server and client intefaces or stubs, based on which, we write our real implementaion
                 *** Use generated code to implemet the gRPC API service handler on the server side
@@ -572,4 +572,18 @@
                 go mod tidy - to download missing packages - google.golang.org/grpc 
 
 ===============================================================================================================================================
-#35 -> 
+#41 -> Run a golang gRPC server and call its API with evans
+
+        Create a new gapi package to redo the Simple_Bank APIs the gRPC way
+        Create a new struct for our server with pb.UnimplementedSimpleBankServer
+        In main.go, separate out http/grpc with runGinServer & runGrpcServer and a config to start only one of them
+
+        Now, use evans to test the unimplemented simple-bank grpc server
+        $ brew tap ktr0731/evans
+        $ brew install evans
+        
+        Evans by default dials tcp 127.0.0.1:50051 where our listner port is 9090, use below to start evans console:
+        $ evans --host localhost --port 9090 -r repl
+        cmds:
+        $ show service
+        $ call CreateUser

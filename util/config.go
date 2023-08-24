@@ -12,7 +12,9 @@ type Config struct {
 	DbDriver             string        `mapstructure:"DB_DRIVER"`
 	DbSourceMain         string        `mapstructure:"DB_SOURCE_MAIN"`
 	DbSourceTest         string        `mapstructure:"DB_SOURCE_TEST"`
-	ServerAddress        string        `mapstructure:"SERVER_ADDRESS"`
+	HttpServerAddress    string        `mapstructure:"HTTP_SERVER_ADDRESS"`
+	GrpcServerAddress    string        `mapstructure:"GRPC_SERVER_ADDRESS"`
+	ServerType           string        `mapstructure:"SERVER_TYPE"`
 	TokenMakerType       string        `mapstructure:"TOKEN_MAKER_TYPE"`
 	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`

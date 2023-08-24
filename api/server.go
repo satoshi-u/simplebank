@@ -12,7 +12,7 @@ import (
 	"github.com/web3dev6/simplebank/util"
 )
 
-// Server serves HTTP requests fo r our banking service
+// Server serves HTTP requests for our banking service
 type Server struct {
 	store      db.Store    // do the transfer_tx
 	tokenMaker token.Maker // manage tokens for users

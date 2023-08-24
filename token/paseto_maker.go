@@ -35,7 +35,7 @@ func (maker *PasetoMaker) CreateToken(username string, duration time.Duration) (
 
 	jwtTokenString, err := maker.paseto.Encrypt(maker.symmetricKey, payload, nil)
 	if err != nil {
-		// fmt.Println(err)
+		// log.Println(err)
 		// If there is an error in encrypting the payload, return that error
 		return "", payload, err
 	}
@@ -62,7 +62,7 @@ func (maker *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 
 	err = payload.Valid()
 	if err != nil {
-		// fmt.Println(err)
+		// log.Println(err)
 		// If there is an error in validating the payload(check expiry), return that error
 		return nil, err
 	}

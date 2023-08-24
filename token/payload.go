@@ -1,7 +1,7 @@
 package token
 
 import (
-	"fmt"
+	"log"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -69,8 +69,8 @@ func NewJWTPayload(username string, duration time.Duration) (*JWTPayload, error)
 // note* ExpiresAt already verified in claims - this is optional (must in PASETO)
 func (payload *Payload) Valid() error {
 	// basic check if token is expired
-	fmt.Println(time.Now())
-	fmt.Println(payload.ExpiresAt)
+	log.Println(time.Now())
+	log.Println(payload.ExpiresAt)
 	if time.Now().After(payload.ExpiresAt) {
 		return ErrExpiredToken
 	}
