@@ -587,3 +587,14 @@
         cmds:
         $ show service
         $ call CreateUser
+
+===============================================================================================================================================
+#42 -> Implement gRPC APIs to create and login users
+
+        Create these APIs in separate files in gapi package
+        Reuse logic from Gin APIs
+        Note:   There is differnce between db.User and pb.User - write utils to convert if too much reuse in code
+                Use timestamppb.New() to create google.protobuf.Timestamp in pb.User from time.Timestamp in db.User
+                For now, let UserAgent and ClientIp be empty while creating session in LoginUser gRPC API (no gin context to get this info)
+===============================================================================================================================================
+#43 ->
