@@ -673,8 +673,19 @@
                         google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0 
                    Once you run `make evans`, make sure to also run
                         $ package pb
-                        $ service SimpleBank       
+                        $ service SimpleBank     
+                
+        TODO:   -> Write GRPC equivalent of all Gin Apis(package api - user, account, token, transfer) in gapi package
+  
 ===============================================================================================================================================
- 
-        
+#44 -> Extract info from gRPC metadata
+
+        Using below packages to get metadata like ClientIp & UserAgent from the grpc context
+        "google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
+
+        Note:   -> There has to be multiple if-blocks in ExtractMetadata() for differnt header-names of differnt clients
+
+===============================================================================================================================================
+#45
 
