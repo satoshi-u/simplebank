@@ -19,6 +19,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
+const initDbNumUserAccount = 10
+
 func main() {
 	// load config from app.env
 	config, err := util.LoadConfig(".")
@@ -32,8 +34,11 @@ func main() {
 		log.Fatal("cannot connect to db:", err)
 	}
 
-	// create store, and then server
+	// create store with db conn
 	store := db.NewStore(conn)
+
+	// init accounts in db
+	initDbWithMinUsersAccounts(store, initDbNumUserAccount)
 
 	if config.ServerType == "HTTP" {
 		// run http server on 8080
@@ -137,5 +142,48 @@ func runGatewayServer(config util.Config, store db.Store) {
 	err = http.Serve(listener, mux)
 	if err != nil {
 		log.Fatal("cannot start HTTP gateway ser  ver:", err)
+	}
+}
+
+func initDbWithMinUsersAccounts(store db.Store, num int64) {
+	count, err := store.GetCountForUsers(context.Background())
+	if err != nil {
+		log.Fatal("error in getting count for users from db.store")
+	}
+	if count < num {
+		toAdd := num - count
+		log.Printf("store: to add %d users with corresponding funded INR accounts!", toAdd)
+		var users = []db.User{}
+		var accounts = []db.Account{}
+		for i := int64(0); i < toAdd; i++ {
+			// create user
+			hashedCommonPassword, err := util.HashPassword("secret")
+			if err != nil {
+				log.Fatal("error in hashing CommonPassword while creating user")
+			}
+			user, err := store.CreateUser(context.Background(), db.CreateUserParams{
+				Username:       util.RandomString(8),
+				HashedPassword: hashedCommonPassword,
+				FullName:       util.RandomString(4) + util.RandomString(6),
+				Email:          util.RandomEmail(),
+			})
+			if err != nil {
+				log.Fatal("error in creating user")
+			}
+			users = append(users, user)
+			// create account for user with INR as currency
+			arg := db.CreateAccountParams{
+				Owner:    user.Username,
+				Balance:  util.RandomBalance(),
+				Currency: util.INR,
+			}
+			account, err := store.CreateAccount(context.Background(), arg)
+			if err != nil {
+				log.Fatal("error in creating account for user")
+			}
+			accounts = append(accounts, account)
+		}
+		log.Printf("num (users created) = %d\n", len(users))
+		log.Printf("num (accounts created) = %d\n", len(accounts))
 	}
 }

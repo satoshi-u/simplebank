@@ -41,6 +41,17 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getCountForUsers = `-- name: GetCountForUsers :one
+SELECT COUNT(*) FROM users
+`
+
+func (q *Queries) GetCountForUsers(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCountForUsers)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT username, hashed_password, full_name, email, password_changed_at, created_at
 FROM users
