@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net"
+	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
 	"github.com/web3dev6/simplebank/api"
 	db "github.com/web3dev6/simplebank/db/sqlc"
@@ -13,6 +16,7 @@ import (
 	"github.com/web3dev6/simplebank/util"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func main() {
@@ -31,12 +35,17 @@ func main() {
 	// create store, and then server
 	store := db.NewStore(conn)
 
-	if config.ServerType == "GRPC" {
+	if config.ServerType == "HTTP" {
+		// run http server on 8080
+		runGinServer(config, store)
+	} else if config.ServerType == "GRPC" {
 		// run grpc server on 9090
 		runGrpcServer(config, store)
-	} else if config.ServerType == "HTTP" {
-		// run server on 8080
-		runGinServer(config, store)
+	} else if config.ServerType == "GRPC_GATEWAY" {
+		// run grpc's http gateway server on 8080 as a goroutine without blocking main
+		go runGatewayServer(config, store)
+		// run grpc server on 9090
+		runGrpcServer(config, store)
 	}
 }
 
@@ -46,7 +55,7 @@ func runGinServer(config util.Config, store db.Store) {
 		log.Fatal("cannot create server:", err)
 	}
 
-	// start server
+	// start server on a specified http port
 	err = server.Start(config.HttpServerAddress)
 	if err != nil {
 		log.Fatal("cannot start http server:", err)
@@ -71,7 +80,7 @@ func runGrpcServer(config util.Config, store db.Store) {
 	// Allows a grpc client to easily explore - what RPCs are available and how to cal them
 	reflection.Register(grpcServer)
 
-	// create listener to listen to gRPC requests on a specified port
+	// create listener to listen to gRPC requests on a specified grpc port
 	listener, err := net.Listen("tcp", config.GrpcServerAddress)
 	if err != nil {
 		log.Fatal("cannot create listener:", err)
@@ -85,26 +94,48 @@ func runGrpcServer(config util.Config, store db.Store) {
 	}
 }
 
-// func initDbWithAccounts(store db.Store, numTestAccounts int) {
-// 	// create some accounts if none exists in db
-// 	count, err := store.GetCountForAccounts(context.Background())
-// 	if err != nil {
-// 		log.Fatal("error in getting count for accounts from db.store")
-// 	}
-// 	if count == 0 {
-// 		log.Printf("store empty! Creating some accounts before starting server...")
-// 		var accounts = []db.Account{}
-// 		for i := 0; i < numTestAccounts; i++ {
-// 			account, err := store.CreateAccount(context.Background(), db.CreateAccountParams{
-// 				Owner:    util.RandomOwner(),
-// 				Balance:  util.RandomBalance(),
-// 				Currency: util.RandomCurrency()},
-// 			)
-// 			if err != nil {
-// 				log.Fatal("error in creating accounts")
-// 			}
-// 			accounts = append(accounts, account)
-// 		}
-// 		log.Printf("num (accounts created) = %d\n", len(accounts))
-// 	}
-// }
+func runGatewayServer(config util.Config, store db.Store) {
+	// create a simple_bank server struct which embeds pb.UnimplementedSimpleBankServer
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot register handler  server:", err)
+	}
+
+	// jsonOptions for snake-case in names of json-fileds in response from gateway
+	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions: protojson.MarshalOptions{
+			UseProtoNames: true,
+		},
+		UnmarshalOptions: protojson.UnmarshalOptions{
+			DiscardUnknown: true,
+		},
+	})
+	// create a grpcMux using grpc-gateway's runtime package with jsonOption
+	grpcMux := runtime.NewServeMux(jsonOption)
+
+	// register simple_bank server with above created grpcMux, along with a context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
+	if err != nil {
+		log.Fatal("cannot create listener:", err)
+	}
+
+	// create a http serveMux which takes http requests from client
+	mux := http.NewServeMux()
+	// to convert the http requests from client to grpcRequest, reroute them to grpcMux
+	mux.Handle("/", grpcMux)
+
+	// create listener to listen to client http requests on a specified http-gateway port
+	listener, err := net.Listen("tcp", config.HttpServerAddress)
+	if err != nil {
+		log.Fatal("cannot create listener:", err)
+	}
+
+	// start server with listener and http mux
+	log.Printf("starting HTTP gateway server at %s...", listener.Addr().String())
+	err = http.Serve(listener, mux)
+	if err != nil {
+		log.Fatal("cannot start HTTP gateway ser  ver:", err)
+	}
+}

@@ -530,11 +530,11 @@
                         A normal grpc client will connec t directly to the grpc server to send a grpc request and receive a binary response
                         An http client will connect to the gateway server to send an http request, 
                         This http request is translated into grpc formated and forwarded to grpc service handler to be processed
-                        Also, the grpc response is trnslated back into json format before returning to the http client
+                        Also, the grpc response is translated back into json format before returning to the http client
 
                 -> Two types of translation:
                         1. In-process translation 
-                                gateway can call the grpc handler directly in code, with no extra neetwork hashedPassword
+                                gateway can call the grpc handler directly in code, with no extra network hop
                                 works only for unary grpc
                         2. Separate proxy server
                                 the http json request here will be trnaslated and forwarded to the grpc server via a network call                          
@@ -597,4 +597,84 @@
                 Use timestamppb.New() to create google.protobuf.Timestamp in pb.User from time.Timestamp in db.User
                 For now, let UserAgent and ClientIp be empty while creating session in LoginUser gRPC API (no gin context to get this info)
 ===============================================================================================================================================
-#43 ->
+#43 -> gRPC Gateway - serve both gRPC & HTTP requests
+
+        1. Refer grpc-gateway https://github.com/grpc-ecosystem/grpc-gateway
+
+        2. Add the following in your project :-
+        {{{{{
+                // +build tools
+
+                package tools
+
+                import (
+                _ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway"
+                _ "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2"
+                _ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+                _ "google.go lang.org/protobuf/cmd/protoc-gen-go"
+                )
+        }}}}}
+
+       3. Install all binaries of the plugins to $GOBIN, used by protoc to generate code :-
+                $ go install \
+                github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway \
+                github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2 \
+                google.golang.org/protobuf/cmd/protoc-gen-go \
+                google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+        Note:   You need not use 'buf generate' to genrate go files, as you have already done that using protoc directly
+                You need to use only protoc-gen-grpc-gateway binary to generate the grpc gateway go code
+
+        4. We will use the 2nd option of generating grpc gateway by .proto modifications to use custom http mappings - With custom annotations
+           Add a google.api.http annotation to your .proto file
+                option (google.api.http) = {
+                        post: "/v1/example/echo"
+                        body: "*"
+                };
+           If you are using protoc to generate stubs, 
+           you need to ensure the required dependencies 
+           are available to the compiler at compile time. 
+           These can be found by manually cloning and copying 
+           the relevant files from the googleapis repository, 
+           and providing them to protoc when running. 
+           The files you will need are:
+                google/api/annotations.proto
+                google/api/field_behavior.proto
+                google/api/http.proto
+                google/api/httpbody.proto
+           In your project, create dir proto/google/api, then separately clone https://github.com/googleapis/googleapis, cd into it and copy files :
+                $ cp google/api/annotations.proto ../simplebank/proto/google/api
+                $ cp google/api/field_behavior.proto ../simplebank/proto/google/api
+                $ cp google/api/http.proto ../simplebank/proto/google/api
+                $ cp google/api/httpbody.proto ../simplebank/proto/google/api
+
+        5. Now add the google.api.http annotation with correct api paths and versioning,
+           for both create_user and login_user
+
+        6. Update the protoc in Makefile to generate both grpc-stubs and grpc-gateway
+           Add the follwing:-
+           $ --grpc-gateway_out=pb --grpc-  gateway_opt paths=source_relative \
+           To know more:-
+           $ protoc-gen-grpc-gateway --help
+           After these changes, run:-
+           $ make proto
+        
+        7. Finally, in main.go, write `func runGatewayServer()`, to run grpc-gateway (in-process-translation method),
+           which runs along with `func runGrpcServer()`.
+           Configure all 3 modes of server separately via app.env as HTTP, GRPC, GRPC_GATEWAY
+
+        8. The response from grpc's http-gateway is camel-case, make it snake-case
+           https://grpc-ecosystem.github.io/grpc-gateway/docs/mapping/customizing_your_gateway/#using-proto-names-in-json
+
+
+        Note:   -> Evans cannot run directly with default package and service using 
+                        google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0 
+                   It worked fine previously when we used
+                        google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.3.0 
+                   Once you run `make evans`, make sure to also run
+                        $ package pb
+                        $ service SimpleBank       
+===============================================================================================================================================
+ 
+        
+
