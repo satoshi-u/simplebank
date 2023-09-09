@@ -130,6 +130,9 @@ func runGatewayServer(config util.Config, store db.Store) {
 	mux := http.NewServeMux()
 	// to convert the http requests from client to grpcRequest, reroute them to grpcMux
 	mux.Handle("/", grpcMux)
+	// create a http-fs & serve auto-generated swagger docs for grpc-gateway server
+	fs := http.FileServer(http.Dir("./doc/swagger"))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs)) // StripPrefix strips the route prefix of the url before passing the request to the static file server
 
 	// create listener to listen to client http requests on a specified http-gateway port
 	listener, err := net.Listen("tcp", config.HttpServerAddress)

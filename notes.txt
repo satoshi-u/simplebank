@@ -687,5 +687,62 @@
         Note:   -> There has to be multiple if-blocks in ExtractMetadata() for differnt header-names of differnt clients
 
 ===============================================================================================================================================
-#45
+#45 -> Automatic generate & serve Swagger docs for Go grpc-gateway server
 
+        1.
+        Modify the `make proto` in Makefile by adding :-
+                rm -f doc/swagger/*.swagger.json
+                --openapiv2_out=doc/swagger --openapiv2_opt=allow_merge=true,merge_file_name=simple_bank \
+        Note:   -> You already have the open-api dependency "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2" in your tools package
+
+
+        2.
+        Now, let's try to customize our swagger.json content with open-api options, modify service_simple_bank.proto with :-
+import "protoc-gen-openapiv2/options/annotations.proto";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Simple Bank API";
+    version: "1.0";
+    contact: {
+      name: "web3dev6";
+      url: "https://github.com/web3dev6";
+      email: "sarthakjoshi.in@gmail.com@example.com";
+    };
+  };
+};
+        For the open-api import to work in your project,
+        the external proto files we will need are:
+                protoc-gen-openapiv2/options/annotations.proto
+                protoc-gen-openapiv2/options/openapiv2.proto
+        In your project dir proto, create protoc-gen-openapiv2/options dir, run:-
+                $ mkdir -p proto/protoc-gen-openapiv2/options
+        Then separately clone https://github.com/grpc-ecosystem/grpc-gateway.git, cd into it and copy files, run:-
+                $ cp protoc-gen-openapiv2/options/annotations.proto ../simplebank/proto/protoc-gen-openapiv2/options
+                $ cp protoc-gen-openapiv2/options/openapiv2.proto ../simplebank/proto/protoc-gen-openapiv2/options
+         Note:   -> (ONE-LINER) 
+                $ cp protoc-gen-openapiv2/options/*.proto ../simplebank/proto/protoc-gen-openapiv2/options
+  
+
+        3.
+        Use swagger-ui to dynamically generate beautiful documentation from a Swagger-compliant API (our swagger.json file)
+        Refer https://github.com/swagger-api/swagger-ui
+
+        We will use the 2nd option:-
+        swagger-ui-dist 
+        It is a dependency-free module that includes everything you need to serve Swagger UI in
+        a server-side project, 
+        or a single-page application that can't resolve npm module dependencies.
+
+        Clone the repo https://github.com/swagger-api/swagger-ui.git,
+        and copy the HTML, JavaScript, and CSS assets required, into doc/swagger dir, along with swagger.json file, run:-
+                $ cp -r dist/* ../simplebank/doc/swagger
+        Now, modify the url in swagger-initializer.js to:-
+                url: "simple_bank.swagger.json"
+        
+        Serve the whole doc/swagger dir as static resources from your main.go in func runGatewayServer()
+        Note:   -> Use StripPrefix to strip the route prefix of the url before passing the request to the static file server
+                -> In `make proto` of Makefile, in openapiv2_opt, add json_names_for_fields=false -> to get swagger doc req/res fields with snake-case
+        
+        TODO:   -> Gin Server & Swagger Docs, same as GRPC Gateway Docs
+===============================================================================================================================================
+#46 ->
