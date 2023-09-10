@@ -8,12 +8,19 @@ import (
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	"github.com/web3dev6/simplebank/pb"
 	"github.com/web3dev6/simplebank/util"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
+	// validate request & err handling
+	violations := validateLoginUserRequest(req)
+	if violations != nil {
+		return nil, invalidArgumentError(violations)
+	}
+
 	// get user from db
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
@@ -54,6 +61,7 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to create user session: %s", err)
 	}
 
+	// return resp
 	return &pb.LoginUserResponse{
 		User:                  convertUser(user),
 		SessionId:             session.ID.String(),
@@ -62,4 +70,14 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 		RefreshToken:          refreshToken,
 		RefreshTokenExpiresAt: timestamppb.New(refreshPayload.ExpiresAt),
 	}, nil
+}
+
+func validateLoginUserRequest(req *pb.LoginUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
+	if err := ValidateUsername(req.GetUsername()); err != nil {
+		violations = append(violations, fieldViolation("username", err))
+	}
+	if err := ValidatePassword(req.GetPassword()); err != nil {
+		violations = append(violations, fieldViolation("password", err))
+	}
+	return violations
 }

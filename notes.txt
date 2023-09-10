@@ -770,4 +770,17 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
         (ref:- https://github.com/grpc-ecosystem/grpc-gateway/blob/main/examples/internal/proto/examplepb/a_bit_of_everything.proto)
 
 ===============================================================================================================================================
-#47 -> 
+#47 -> Validate gRPC parameters and send human/machine friendly response
+
+        In gin validations, it used `github.com/go-playground/validator/v10` internally to handle field validations of client requests via struct tags.
+        
+        In grpc validations, we can write our own functions to handle the validations in validator.go, 
+        and use them in gapi - CreateUser, LoginUser etc,
+        along with proper error handling,
+        returning bad responses with proper error code, msg and WithDetails
+
+        TODO:   -> Write validations for LoginUser gapi
+                -> Improve gin api responses with proper error formatting like in gapi
+
+===============================================================================================================================================
+#48 ->
