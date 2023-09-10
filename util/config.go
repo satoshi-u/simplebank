@@ -12,6 +12,7 @@ type Config struct {
 	DbDriver             string        `mapstructure:"DB_DRIVER"`
 	DbSourceMain         string        `mapstructure:"DB_SOURCE_MAIN"`
 	DbSourceTest         string        `mapstructure:"DB_SOURCE_TEST"`
+	MigrationUrl         string        `mapstructure:"MIGRATION_URL"`
 	HttpServerAddress    string        `mapstructure:"HTTP_SERVER_ADDRESS"`
 	GrpcServerAddress    string        `mapstructure:"GRPC_SERVER_ADDRESS"`
 	ServerType           string        `mapstructure:"SERVER_TYPE"`

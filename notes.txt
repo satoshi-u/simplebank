@@ -783,4 +783,22 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
                 -> Improve gin api responses with proper error formatting like in gapi
 
 ===============================================================================================================================================
-#48 ->
+#48 -> Run DB migrations directly inside Golang code
+
+        Add this package in main.go, and run go mod tidy:-
+        "github.com/golang-migrate/migrate/v4" 
+
+        Add code to run migration by pointing to migration dir and dbSource.
+
+        Get error :-
+        cannot create new migrate instance:source driver: unknown driver 'file' (forgotten import?)
+        cannot create new migrate instance:database driver: unknown driver postgresql (forgotten import?)
+
+        Fix error by adding blank imports of drivers:-
+        _ "github.com/golang-migrate/migrate/v4/source/file"
+        _ "github.com/golang-migrate/migrate/v4/database/postgres"
+
+        Note:   -> when no new migration, ignore the error in migrate.Up()
+
+===============================================================================================================================================
+#49 ->
