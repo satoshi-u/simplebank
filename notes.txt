@@ -687,7 +687,7 @@
         Note:   -> There has to be multiple if-blocks in ExtractMetadata() for differnt header-names of differnt clients
 
 ===============================================================================================================================================
-#45 -> Automatic generate & serve Swagger docs for Go grpc-gateway server
+#45 -> Automatic   & serve Swagger docs for Go grpc-gateway server
 
         1.
         Modify the `make proto` in Makefile by adding :-
@@ -745,4 +745,29 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
         
         TODO:   -> Gin Server & Swagger Docs, same as GRPC Gateway Docs
 ===============================================================================================================================================
-#46 ->
+#46 -> Embed static frontend files inside Golang backend server's binary using statik
+
+        Simply, add `github.com/rakyll/statik` in your tools package and run go mod tidy
+        Also, Run to install the statik-cli:-
+        $ go get github.com/rakyll/statik
+
+        Update `make proto` in Makefile, to generate static binary package -> everytime we regenerate the swager doc, add :-
+                statik -src=./doc/swagger -dest=./doc
+        Next, run `make proto`
+        Next, instead of http-fs, create and use the statik-fs to   server swagger doc
+
+        Note:   -> error  : cannot create statik fs:statik/fs: no zip data registered
+                   reason : the generated statik package was never imported/loaded, init func was never called, no data registered in zipData
+                   fix    : add the following blank import for the statik sub-package at top of main.go :-
+                            _ "github.com/web3dev6/simplebank/doc/statik"
+                   check  : go to http://localhost:8080/swagger
+
+        [Bonus] Let's add summary and desc for each of our swagger API, by modifying proto/service_simple_bank.proto, add:-
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+          description: "Use this API to create a new user";
+          summary: "Create new user";
+        };
+        (ref:- https://github.com/grpc-ecosystem/grpc-gateway/blob/main/examples/internal/proto/examplepb/a_bit_of_everything.proto)
+
+===============================================================================================================================================
+#47 -> 

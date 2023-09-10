@@ -9,8 +9,10 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
+	"github.com/rakyll/statik/fs"
 	"github.com/web3dev6/simplebank/api"
 	db "github.com/web3dev6/simplebank/db/sqlc"
+	_ "github.com/web3dev6/simplebank/doc/statik"
 	"github.com/web3dev6/simplebank/gapi"
 	"github.com/web3dev6/simplebank/pb"
 	"github.com/web3dev6/simplebank/util"
@@ -130,9 +132,17 @@ func runGatewayServer(config util.Config, store db.Store) {
 	mux := http.NewServeMux()
 	// to convert the http requests from client to grpcRequest, reroute them to grpcMux
 	mux.Handle("/", grpcMux)
+
 	// create a http-fs & serve auto-generated swagger docs for grpc-gateway server
-	fs := http.FileServer(http.Dir("./doc/swagger"))
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs)) // StripPrefix strips the route prefix of the url before passing the request to the static file server
+	// fs := http.FileServer(http.Dir("./doc/swagger"))
+	// mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs)) // StripPrefix strips the route prefix of the url before passing the request to the static file server
+
+	// create a statik-fs - static data already embedded in binary in `make proto``, no need to read from disk(Dockerfile)
+	statikFs, err := fs.New() // alternatively, we can use NewWithNamespace func for custom ns
+	if err != nil {
+		log.Fatal("cannot create statik fs:", err)
+	}
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(statikFs)))
 
 	// create listener to listen to client http requests on a specified http-gateway port
 	listener, err := net.Listen("tcp", config.HttpServerAddress)
