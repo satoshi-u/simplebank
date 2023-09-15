@@ -794,11 +794,70 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
         cannot create new migrate instance:source driver: unknown driver 'file' (forgotten import?)
         cannot create new migrate instance:database driver: unknown driver postgresql (forgotten import?)
 
-        Fix error by adding blank imports of drivers:-
+        Fix error by addi g blank imports of drivers:-
         _ "github.com/golang-migrate/migrate/v4/source/file"
         _ "github.com/golang-migrate/migrate/v4/database/postgres"
 
         Note:   -> when no new migration, ignore the error in migrate.Up()
 
 ===============================================================================================================================================
-#49 ->
+#49 -> Parital update in sqlc, working with nullable fields
+
+APPROACH-I
+
+        1. add UPDATE query for a user in db/query/user.sql:-
+-- name: UpdateUser :one
+UPDATE users
+SET hashed_password = $1,
+    full_name = $2,
+    email = $3
+WHERE username = $4
+RETURNING *;
+
+        2. modify it such that it allows optional field updates:-
+-- name: UpdateUser :one
+UPDATE users
+SET hashed_password = CASE
+        WHEN $1 = TRUE THEN $2
+        ELSE hashed_password
+    full_name = CASE
+        WHEN $3 = TRUE THEN $4
+        ELSE full_name
+    email = CASE
+        WHEN $5 = TRUE THEN $6
+        ELSE email
+WHERE username = $7
+RETURNING *;
+
+        3. modify it further such that the generated UpdateUserParams struct has better names/types for boolean fields:- 
+        Note:   @ is equivalent to sqlc.arg
+        Note:   cannot mix positional parameters or named parameters or @ parameters
+-- name: UpdateUser :one
+UPDATE users
+SET hashed_password = CASE 
+        WHEN @set_hashed_password::boolean = TRUE THEN @hashed_password
+        ELSE hashed_password
+    END,
+    full_name = CASE
+         WHEN @set_full_name::boolean = TRUE THEN @full_name
+        ELSE full_name
+    END,
+    email = CASE
+         WHEN @set_email::boolean = TRUE THEN @email
+        ELSE email
+    END 
+WHERE username = @username
+RETURNING *;
+         
+APPROACH-II
+
+        Nullable Parameters with COALESCE & sqlc.narg
+-- name: GetCountForUsers :one
+SELECT COUNT(*) FROM users;
+-- name: UpdateUser :one
+UPDATE users
+SET hashed_password = COALESCE(sqlc.narg(hashed_password), hashed_password),
+    full_name = COALESCE(sqlc.narg(full_name), full_name),
+    email = COALESCE(sqlc.narg(email), email)
+WHERE username = sqlc.arg(username)
+RETURNING *;

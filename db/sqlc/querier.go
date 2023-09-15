@@ -35,6 +35,7 @@ type Querier interface {
 	// WHERE id = $1
 	// RETURNING *;
 	UpdateAccountBalance(ctx context.Context, arg UpdateAccountBalanceParams) (Account, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)
