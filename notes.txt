@@ -861,3 +861,17 @@ SET hashed_password = COALESCE(sqlc.narg(hashed_password), hashed_password),
     email = COALESCE(sqlc.narg(email), email)
 WHERE username = sqlc.arg(username)
 RETURNING *;
+===============================================================================================================================================
+#50 -> Build gRPC update API with optional/nullable parameters
+
+        Iterating on #49, where we generated db/sqlc code to update a user,
+        Here let's write a grpc endpoint to take user inputs to update user in db
+                1. Write a new proto file for the endpoint in protos dir
+                2. Use optional keyword in message UpdateUserRequest to make fields optional in generated code(*string instead of string) 
+                3. In gapi, create a file for update_user rpc, and craft UpdateUserParams parmas carefully
+                4. In func validateUpdateUserRequest, validate only if not nil param
+        Test with insomnia for all test-cases
+
+        TODO:   -> Write gin endpoint for update_user
+
+===============================================================================================================================================

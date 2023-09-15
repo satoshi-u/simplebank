@@ -163,3 +163,43 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, resp)
 }
+
+// type updateUserRequest struct {
+// 	Username string `json:"username" binding:"required,alphanum"` // required - update user based on this key
+// 	Password string `json:"password" binding:"min=6"`             // optional
+// 	FullName string `json:"full_name"`                            // optional
+// 	Email    string `json:"email" binding:"email"`                // optional
+// }
+
+// func (server *Server)  (ctx *gin.Context) {
+// 	var req updateUserRequest
+// 	if err := ctx.ShouldBindJSON(&req); err != nil {
+// 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+// 		return
+// 	}
+
+// 	hashedPassword, err := util.HashPassword(req.Password)
+// 	if err != nil {
+// 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+// 	}
+// 	arg := db.CreateUserParams{
+// 		Username:       req.Username,
+// 		HashedPassword: hashedPassword,
+// 		FullName:       req.FullName,
+// 		Email:          req.Email,
+// 	}
+
+// 	user, err := server.store.CreateUser(ctx, arg)
+// 	if err != nil {
+// 		// username and email must be unique (UNIQUE)
+// 		if db.ErrorCode(err) == db.UniqueViolation {
+// 			ctx.JSON(http.StatusForbidden, errorResponse(err))
+// 			return
+// 		}
+// 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+// 		return
+// 	}
+
+// 	resp := newUserResponse(user)
+// 	ctx.JSON(http.StatusOK, resp)
+// }

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "github.com/web3dev6/simplebank/pb";
+
+import "user.proto";
+ 
+message UpdateUserRequest {
+    string username = 1;
+    optional string password = 2;
+    optional string full_name = 3;
+    optional string email = 4;
+    optional string password_changed_at = 5;
+}
+
+message UpdateUserResponse {
+    User user = 1;
+}  

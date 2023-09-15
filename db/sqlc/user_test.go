@@ -109,6 +109,10 @@ func TestUpdateUserOnlyPassword(t *testing.T) {
 			String: newHashedPassword,
 			Valid:  true,
 		},
+		PasswordChangedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
 	})
 
 	require.NoError(t, err)
@@ -117,6 +121,8 @@ func TestUpdateUserOnlyPassword(t *testing.T) {
 	require.Equal(t, user.Username, updatedUser.Username)
 	require.NotEqual(t, user.HashedPassword, updatedUser.HashedPassword)
 	require.Equal(t, newHashedPassword, updatedUser.HashedPassword)
+	require.NotEqual(t, user.PasswordChangedAt, updatedUser.PasswordChangedAt)
+	require.WithinDuration(t, time.Now(), updatedUser.PasswordChangedAt, time.Second)
 	require.Equal(t, user.FullName, updatedUser.FullName)
 	require.Equal(t, user.Email, updatedUser.Email)
 }
@@ -144,6 +150,10 @@ func TestUpdateUserAllFields(t *testing.T) {
 			String: newHashedPassword,
 			Valid:  true,
 		},
+		PasswordChangedAt: sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		},
 	})
 
 	require.NoError(t, err)
@@ -156,4 +166,6 @@ func TestUpdateUserAllFields(t *testing.T) {
 	require.Equal(t, newEmail, updatedUser.Email)
 	require.NotEqual(t, user.HashedPassword, updatedUser.HashedPassword)
 	require.Equal(t, newHashedPassword, updatedUser.HashedPassword)
+	require.NotEqual(t, user.PasswordChangedAt, updatedUser.PasswordChangedAt)
+	require.WithinDuration(t, time.Now(), updatedUser.PasswordChangedAt, time.Second)
 }
