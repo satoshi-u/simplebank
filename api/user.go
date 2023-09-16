@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -164,42 +165,63 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-// type updateUserRequest struct {
-// 	Username string `json:"username" binding:"required,alphanum"` // required - update user based on this key
-// 	Password string `json:"password" binding:"min=6"`             // optional
-// 	FullName string `json:"full_name"`                            // optional
-// 	Email    string `json:"email" binding:"email"`                // optional
-// }
+type updateUserRequest struct {
+	Username string  `json:"username" binding:"required,alphanum"`         // required - update user based on this key
+	Password *string `json:"password,omitempty" binding:"omitempty,min=6"` // optional - todo add regex
+	FullName *string `json:"full_name,omitempty" binding:"omitempty"`      // optional - todo add regex
+	Email    *string `json:"email,omitempty" binding:"omitempty,email"`    // optional
+}
 
-// func (server *Server)  (ctx *gin.Context) {
-// 	var req updateUserRequest
-// 	if err := ctx.ShouldBindJSON(&req); err != nil {
-// 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-// 		return
-// 	}
+func (server *Server) updateUser(ctx *gin.Context) {
+	var req updateUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
-// 	hashedPassword, err := util.HashPassword(req.Password)
-// 	if err != nil {
-// 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-// 	}
-// 	arg := db.CreateUserParams{
-// 		Username:       req.Username,
-// 		HashedPassword: hashedPassword,
-// 		FullName:       req.FullName,
-// 		Email:          req.Email,
-// 	}
+	fmt.Printf("updateUserRequest: %+v", req)
 
-// 	user, err := server.store.CreateUser(ctx, arg)
-// 	if err != nil {
-// 		// username and email must be unique (UNIQUE)
-// 		if db.ErrorCode(err) == db.UniqueViolation {
-// 			ctx.JSON(http.StatusForbidden, errorResponse(err))
-// 			return
-// 		}
-// 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-// 		return
-// 	}
+	// make update_user params
+	arg := db.UpdateUserParams{
+		Username: req.Username,
+		FullName: sql.NullString{
+			String: *req.FullName,
+			Valid:  req.FullName != nil,
+		},
+		Email: sql.NullString{
+			String: *req.Email,
+			Valid:  req.Email != nil,
+		},
+	}
 
-// 	resp := newUserResponse(user)
-// 	ctx.JSON(http.StatusOK, resp)
-// }
+	if req.Password != nil {
+		// hash password
+		hashedPassword, err := util.HashPassword(*req.Password)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		}
+		// set hash_password
+		arg.HashedPassword = sql.NullString{
+			String: hashedPassword,
+			Valid:  true,
+		}
+		arg.PasswordChangedAt = sql.NullTime{
+			Time:  time.Now(),
+			Valid: true,
+		}
+	}
+
+	user, err := server.store.UpdateUser(ctx, arg)
+	if err != nil {
+		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// return resp
+	resp := newUserResponse(user)
+	ctx.JSON(http.StatusOK, resp)
+}

@@ -53,7 +53,6 @@ func (server *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest)
 	// call UpdateUser for db
 	user, err := server.store.UpdateUser(ctx, arg)
 	if err != nil {
-		// username and email must be unique (UNIQUE)
 		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() {
 			return nil, status.Errorf(codes.NotFound, "user with username not found: %s", err)
 		}
