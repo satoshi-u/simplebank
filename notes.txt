@@ -875,3 +875,14 @@ RETURNING *;
         TODO:   -> Write gin endpoint for update_user
 
 ===============================================================================================================================================
+#51 -> Add authorization to protect gRPC API
+
+        Write func authorizeUser where bearer token is fetched form metadata with auth_header name
+        Check for token type as bearer before getting payload with VerifyToken()
+        Call this authorizeUser in gapi handler - it makes things work for both grpc and http-gateway server, unlike a gprc interceptor
+        Ensure proper error handling with code reusability
+        Fixed gin update_user -> added token authentication & authorization to it, and added proper nil checks to make update_fields optional without panics with *string
+
+        TODO:   -> Implement a gprc interceptor
+
+===============================================================================================================================================

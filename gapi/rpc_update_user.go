@@ -14,7 +14,17 @@ import (
 )
 
 func (server *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
-	// validate request & err handling
+	// check if valid token & authorized user
+	// Note: Using authorizeUser here makes things work for both grpc and http-gateway server
+	authPayload, err := server.authorizeUser(ctx)
+	if err != nil {
+		return nil, unauthenticatedError(err)
+	}
+	if req.Username != authPayload.Username {
+		return nil, status.Errorf(codes.PermissionDenied, "mismatch in username from authToken and update_request: %s", err)
+	}
+
+	// validate update_request & err handling
 	violations := validateUpdateUserRequest(req)
 	if violations != nil {
 		return nil, invalidArgumentError(violations)

@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -173,27 +172,39 @@ type updateUserRequest struct {
 }
 
 func (server *Server) updateUser(ctx *gin.Context) {
+	// get updateUserRequest
 	var req updateUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	fmt.Printf("updateUserRequest: %+v", req)
-
-	// make update_user params
-	arg := db.UpdateUserParams{
-		Username: req.Username,
-		FullName: sql.NullString{
-			String: *req.FullName,
-			Valid:  req.FullName != nil,
-		},
-		Email: sql.NullString{
-			String: *req.Email,
-			Valid:  req.Email != nil,
-		},
+	// check if authorized user from access_token
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if req.Username != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrUpdatingUserInfoFromUnauthorizedUser))
+		return
 	}
 
+	// fmt.Printf("updateUserRequest: %+v", req)
+	// make update_user params with username
+	arg := db.UpdateUserParams{
+		Username: req.Username,
+	}
+	if req.FullName != nil {
+		// set hash_password
+		arg.FullName = sql.NullString{
+			String: *req.FullName,
+			Valid:  true,
+		}
+	}
+	if req.Email != nil {
+		// set email
+		arg.Email = sql.NullString{
+			String: *req.Email,
+			Valid:  true,
+		}
+	}
 	if req.Password != nil {
 		// hash password
 		hashedPassword, err := util.HashPassword(*req.Password)
@@ -211,6 +222,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		}
 	}
 
+	// update user in db
 	user, err := server.store.UpdateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() {

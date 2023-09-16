@@ -60,7 +60,6 @@ func (server *Server) setupRouter() {
 
 	// add public routes to router
 	router.POST("/users", server.createUser)
-	router.PATCH("/users", server.updateUser)
 	router.POST("/users/login", server.loginUser)
 	router.POST("/tokens/renew_access", server.renewAccessToken)
 
@@ -69,6 +68,7 @@ func (server *Server) setupRouter() {
 	authRoutes.POST("/accounts", server.createAccount)
 	authRoutes.GET("/accounts/:id", server.getAccount)
 	authRoutes.GET("/accounts", server.listAccounts)
+	authRoutes.PATCH("/users", server.updateUser)
 
 	authRoutes.POST("/transfers", server.createTransfer)
 
