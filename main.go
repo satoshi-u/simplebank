@@ -160,6 +160,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	// register simple_bank server with above created grpcMux, along with a context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// performs in-process translation between HTTP and gRPC - means HTTP request will call the gRPC handler func directly, skipping grpc interceptors(logger)
 	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create listener")
@@ -187,9 +188,11 @@ func runGatewayServer(config util.Config, store db.Store) {
 		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 
-	// start server with listener and http mux
+	// get http logger middleware for grpc-gateway within the mux context
+	handlerWithLoggerMw := gapi.HttpLogger(mux)
+	// start server with listener and handlerWithLoggerMw within mux
 	log.Info().Msgf("starting HTTP gateway server at %s...", listener.Addr().String())
-	err = http.Serve(listener, mux)
+	err = http.Serve(listener, handlerWithLoggerMw)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start HTTP gateway server")
 	}

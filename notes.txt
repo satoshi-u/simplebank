@@ -907,5 +907,15 @@ RETURNING *;
                    So if we still want to keep using in-process translation, we will have to write a separate HTTP middleware to log the HTTP requests
 
 ===============================================================================================================================================
-#53 -> 
+#53 ->  Write HTTP logger middleware in Go
 
+        1. Write a separate HTTP middleware in looger.go to log the HTTP requests
+        2. Then in main.go, attach logger middleware handler in mux handler context
+        3. Now when http.Serve is called, call it with logger middleware handler instead of mux handler directly
+
+        Note:   -> In HttpLogger's http.HandlerFunc, call ServeHTTP func with custom ResponseRecorder(has embedded ResponseWriter) instead of http.ResponseWriter directly
+                   It helps to capture status code from handler response and log it
+                   ResponseRecorder also attaches error in logs, if response doesn't have http.StatusOK  
+
+===============================================================================================================================================
+#54 ->

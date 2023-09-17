@@ -21,7 +21,7 @@ func (server *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest)
 		return nil, unauthenticatedError(err)
 	}
 	if req.Username != authPayload.Username {
-		return nil, status.Errorf(codes.PermissionDenied, "mismatch in username from authToken and update_request: %s", err)
+		return nil, status.Errorf(codes.PermissionDenied, "mismatch in username from authToken and update_request payload: %s", err)
 	}
 
 	// validate update_request & err handling
