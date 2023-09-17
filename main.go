@@ -3,9 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net"
 	"net/http"
+	"os"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -32,13 +35,35 @@ func main() {
 	// load config from app.env
 	config, err := util.LoadConfig(".")
 	if err != nil {
-		log.Fatal("cannot load config:", err)
+		log.Fatal().Err(err).Msg("cannot load config")
+	}
+
+	// zerolog config
+	if config.Environment == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+		// *** To customize the configuration and formatting:
+		// output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339}
+		// output.FormatLevel = func(i interface{}) string {
+		// 	return strings.ToUpper(fmt.Sprintf("| %-6s|", i))
+		// }
+		// output.FormatMessage = func(i interface{}) string {
+		// 	return fmt.Sprintf("MSG %s", i)
+		// }
+		// output.FormatFieldName = func(i interface{}) string {
+		// 	return fmt.Sprintf("| FIELD %s:", i)
+		// }
+		// output.FormatFieldValue = func(i interface{}) string {
+		// 	return strings.ToLower(fmt.Sprintf("%s", i))
+		// }
+		// log.Logger = zerolog.New(output).With().Timestamp().Logger()
+	} else if config.Environment == "production" {
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	}
 
 	// open conn to db
 	conn, err := sql.Open(config.DbDriver, config.DbSourceMain)
 	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		log.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
 	// run db migrations here, for both main and test
@@ -68,13 +93,13 @@ func main() {
 func runGinServer(config util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create server:", err)
+		log.Fatal().Err(err).Msg("cannot create server")
 	}
 
 	// start server on a specified http port
 	err = server.Start(config.HttpServerAddress)
 	if err != nil {
-		log.Fatal("cannot start http server:", err)
+		log.Fatal().Err(err).Msg("cannot start http server")
 	}
 }
 
@@ -82,11 +107,14 @@ func runGrpcServer(config util.Config, store db.Store) {
 	// create a simple_bank server struct which embeds pb.UnimplementedSimpleBankServer
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create server:", err)
+		log.Fatal().Err(err).Msg("cannot create server")
 	}
 
-	// grpcServer is a new grpc server instacnce
-	grpcServer := grpc.NewServer()
+	// grpc interceptor - logger
+	grpcLogger := grpc.UnaryInterceptor(gapi.GrpcLogger)
+
+	// grpcServer is a new grpc server instacnce, takes ServerOptions(interceptors like logger  )
+	grpcServer := grpc.NewServer(grpcLogger)
 	// register simple_bank server(has unimplemented service) with this grpcServer
 	pb.RegisterSimpleBankServer(grpcServer, server)
 
@@ -99,14 +127,14 @@ func runGrpcServer(config util.Config, store db.Store) {
 	// create listener to listen to gRPC requests on a specified grpc port
 	listener, err := net.Listen("tcp", config.GrpcServerAddress)
 	if err != nil {
-		log.Fatal("cannot create listener:", err)
+		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 
 	// start server with listener
-	log.Printf("starting gRPC server at %s...", listener.Addr().String())
+	log.Info().Msgf("starting gRPC server at %s...", listener.Addr().String())
 	err = grpcServer.Serve(listener)
 	if err != nil {
-		log.Fatal("cannot start grpc server:", err)
+		log.Fatal().Err(err).Msg("cannot start grpc server")
 	}
 }
 
@@ -114,7 +142,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	// create a simple_bank server struct which embeds pb.UnimplementedSimpleBankServer
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot register handler  server:", err)
+		log.Fatal().Err(err).Msg("cannot register handler  server")
 	}
 
 	// jsonOptions for snake-case in names of json-fileds in response from gateway
@@ -134,7 +162,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	defer cancel()
 	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 	if err != nil {
-		log.Fatal("cannot create listener:", err)
+		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 
 	// create a http serveMux which takes http requests from client
@@ -149,39 +177,39 @@ func runGatewayServer(config util.Config, store db.Store) {
 	// create a statik-fs - static data already embedded in binary in `make proto``, no need to read from disk(Dockerfile)
 	statikFs, err := fs.New() // alternatively, we can use NewWithNamespace func for custom ns
 	if err != nil {
-		log.Fatal("cannot create statik fs:", err)
+		log.Fatal().Err(err).Msg("cannot create statik fs")
 	}
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", http.FileServer(statikFs)))
 
 	// create listener to listen to client http requests on a specified http-gateway port
 	listener, err := net.Listen("tcp", config.HttpServerAddress)
 	if err != nil {
-		log.Fatal("cannot create listener:", err)
+		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 
 	// start server with listener and http mux
-	log.Printf("starting HTTP gateway server at %s...", listener.Addr().String())
+	log.Info().Msgf("starting HTTP gateway server at %s...", listener.Addr().String())
 	err = http.Serve(listener, mux)
 	if err != nil {
-		log.Fatal("cannot start HTTP gateway ser  ver:", err)
+		log.Fatal().Err(err).Msg("cannot start HTTP gateway server")
 	}
 }
 
 func initDbWithMinUsersAccounts(store db.Store, num int64) {
 	count, err := store.GetCountForUsers(context.Background())
 	if err != nil {
-		log.Fatal("error in getting count for users from db.store")
+		log.Fatal().Err(err).Msg("error in getting count for users from db.store")
 	}
 	if count < num {
 		toAdd := num - count
-		log.Printf("store: to add %d users with corresponding funded INR accounts!", toAdd)
+		log.Info().Msgf("store: to add %d users with corresponding funded INR accounts!", toAdd)
 		var users = []db.User{}
 		var accounts = []db.Account{}
 		for i := int64(0); i < toAdd; i++ {
 			// create user
 			hashedCommonPassword, err := util.HashPassword("secret")
 			if err != nil {
-				log.Fatal("error in hashing CommonPassword while creating user")
+				log.Fatal().Err(err).Msg("error in hashing CommonPassword while creating user")
 			}
 			user, err := store.CreateUser(context.Background(), db.CreateUserParams{
 				Username:       util.RandomString(8),
@@ -190,7 +218,7 @@ func initDbWithMinUsersAccounts(store db.Store, num int64) {
 				Email:          util.RandomEmail(),
 			})
 			if err != nil {
-				log.Fatal("error in creating user")
+				log.Fatal().Err(err).Msg("error in creating user")
 			}
 			users = append(users, user)
 			// create account for user with INR as currency
@@ -201,25 +229,25 @@ func initDbWithMinUsersAccounts(store db.Store, num int64) {
 			}
 			account, err := store.CreateAccount(context.Background(), arg)
 			if err != nil {
-				log.Fatal("error in creating account for user")
+				log.Fatal().Err(err).Msg("error in creating account for user")
 			}
 			accounts = append(accounts, account)
 		}
-		log.Printf("num (users created) = %d\n", len(users))
-		log.Printf("num (accounts created) = %d\n", len(accounts))
+		log.Info().Msgf("num (users created) = %d", len(users))
+		log.Info().Msgf("num (accounts created) = %d", len(accounts))
 	}
 }
 
 func runDBMigration(migrationURL string, dbSource string) {
 	migration, err := migrate.New(migrationURL, dbSource)
 	if err != nil {
-		log.Fatal("cannot create new migrate instance:", err)
+		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
 
 	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("failed to run the migrate up:", err)
+		log.Fatal().Err(err).Msg("failed to run the migrate up")
 	}
 	// migration.Steps(numMigration)
 
-	log.Printf("db migrate success for : [%s]\n", dbSource)
+	log.Info().Msgf("db migrate success for : %s", dbSource)
 }

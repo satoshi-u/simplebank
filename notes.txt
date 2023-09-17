@@ -886,3 +886,26 @@ RETURNING *;
         TODO:   -> Implement a gprc interceptor
 
 ===============================================================================================================================================
+#52 -> Write structured logs for gRPC APIs using grpc interceptor
+
+        Info needed in logs:
+                1. what gRPC method called ?  
+                2. how long for request to be processed ?
+                3. what the response status code was ?
+                4. json structured logs - easily parsed and indexed by  tools like Logstash, fluentd, Grafana loki
+
+        We would be using https://github.com/rs/zerolog for writing our structured logs.
+                $ go get -u github.com/rs/zerolog/log
+        Easily write logs in json format with zero allocation.
+        Configure zerolog initially in main.go as per ENV - json if production, colourful if development
+
+        Note:   -> No logs appear when we send http request to grpc-gateway server
+                   That is because we are using in-process translation on our gRPC gateway server
+                   So the gateway will directly call the RPC handler function, without going thru any grpc interceptor(our logger module)
+                   If we run the gateway as a separate server, and use cross-process translation to call our gRPC server via network call, logs will show up in gRPC server like before
+                   But this introduces another network hop, can increase the duration of the request
+                   So if we still want to keep using in-process translation, we will have to write a separate HTTP middleware to log the HTTP requests
+
+===============================================================================================================================================
+#53 -> 
+
