@@ -920,4 +920,16 @@ RETURNING *;
         TODO:   -> Write gin http-logger using zerolog
 
 ===============================================================================================================================================
-#54 ->
+#54 -> Implement background worker in Go with Redis and asynq
+
+      Use case: send verification email (gRPC : for package gapi)
+
+        1. Create a new user record in databse  
+        2. Push a send verification email task to the Redis queue 
+        3. Background worker picks up a task from the queue and process it 
+
+        We will be using asynq- distributed task queue lib: https://github.com/hibiken/asynq
+        A worker goroutine is started for each task in queue,
+        So tasks are processed concurrently by multiple workers. 
+
+          
