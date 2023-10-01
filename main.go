@@ -89,7 +89,7 @@ func main() {
 
 	if config.ServerType == "HTTP" {
 		// run http server on 8080
-		runGinServer(config, store)
+		runGinServer(config, store, taskDistributor)
 	} else if config.ServerType == "GRPC" {
 		// run grpc server on 9090
 		runGrpcServer(config, store, taskDistributor)
@@ -101,13 +101,14 @@ func main() {
 	}
 }
 
-func runGinServer(config util.Config, store db.Store) {
-	server, err := api.NewServer(config, store)
+func runGinServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := api.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server")
 	}
 
 	// start server on a specified http port
+	log.Info().Msgf("starting Gin http-server at %s...", config.HttpServerAddress)
 	err = server.Start(config.HttpServerAddress)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start http server")
@@ -202,7 +203,7 @@ func runGatewayServer(config util.Config, store db.Store, taskDistributor worker
 	// get http handler with logger middleware within the mux context
 	handlerWithLoggerMw := gapi.HttpLogger(mux)
 	// start server with listener and handlerWithLoggerMw
-	log.Info().Msgf("starting HTTP gateway server at %s...", listener.Addr().String())
+	log.Info().Msgf("starting gRPC http-gateway server at %s...", listener.Addr().String())
 	err = http.Serve(listener, handlerWithLoggerMw)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start HTTP gateway server")

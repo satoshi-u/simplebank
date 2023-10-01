@@ -13,10 +13,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	mockdb "github.com/web3dev6/simplebank/db/mock"
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	"github.com/web3dev6/simplebank/util"
+	"github.com/web3dev6/simplebank/worker"
 )
 
 type eqCreateUserParamsMatcher struct {
@@ -187,7 +189,11 @@ func TestCreateUserAPI(t *testing.T) {
 
 			tc.buildStubs(store)
 
-			server := newTestServer(t, store) // using newTestServer instead of NewServer
+			// Redis task distributor
+			taskDistributor := worker.NewRedisTaskDistributor(asynq.RedisClientOpt{
+				Addr: "0.0.0.0:6379",
+			})
+			server := newTestServer(t, store, taskDistributor) // using newTestServer instead of NewServer
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON - POST request

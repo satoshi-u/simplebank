@@ -8,9 +8,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	"github.com/web3dev6/simplebank/token"
 	"github.com/web3dev6/simplebank/util"
+	"github.com/web3dev6/simplebank/worker"
 )
 
 type createUserRequest struct {
@@ -63,6 +65,23 @@ func (server *Server) createUser(ctx *gin.Context) {
 			abortWithErrorResponse(ctx, http.StatusForbidden, err)
 			return
 		}
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+
+	// send verification email to user
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Username: user.Username,
+	}
+	// todo: use db transaction as user shouldn't be created if taskDistributor fails - rollback
+	// asynq options to configure task processing while putting it in queue
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),                // retry fails 10 times
+		asynq.ProcessIn(3 * time.Second),  // process in 3 secs
+		asynq.Queue(worker.QueueCritical), // push in queue "critical"
+	}
+	err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
+	if err != nil {
 		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}

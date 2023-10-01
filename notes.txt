@@ -947,8 +947,8 @@ RETURNING *;
                 create Redis TaskDistributor in main.go, and save it while creating gRPC server instance
                 use TaskDistributor to distribute task@TaskSendVerifyEmail in gapi/rpc_create_user.go
                 start Redis TaskProcessor as a goroutine in main.go
-                add optional asynq.Option(queue_name, process_time, max_retries) while distributing task in  gapi/rpc_create_user.go
-                must specify asynq.Config(queue_name) for processor to pick up task from respective queue, if not default queue
+                add optional asynq.Option(queue_name, process_time, max_retries) while distributing task in gapi/rpc_create_user.go
+                must specify asynq.Config(queue_name) for processor to pick up task from respective queue, if not default queue, in worker/processor.go
 
         Note:   -> use a DB Tx in rpc_create_user (user shouldn't be created if taskDistributor fails - rollback)
 

@@ -75,7 +75,7 @@ func TestMiddlewareOk(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			// don't need interction with store in mw testing, so passing nil
-			server := newTestServer(t, nil)
+			server := newTestServer(t, nil, nil)
 			// recorder to capture reponse
 			recorder := httptest.NewRecorder()
 

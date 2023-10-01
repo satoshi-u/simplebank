@@ -11,18 +11,20 @@ import (
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	token "github.com/web3dev6/simplebank/token"
 	"github.com/web3dev6/simplebank/util"
+	"github.com/web3dev6/simplebank/worker"
 )
 
 // Server serves HTTP requests for our banking service
 type Server struct {
-	store      db.Store    // do the transfer_tx
-	tokenMaker token.Maker // manage tokens for users
-	router     *gin.Engine // send to correct handler for processing
-	config     util.Config // store config used to start the server
+	store           db.Store               // do the transfer_tx
+	tokenMaker      token.Maker            // manage tokens for users
+	router          *gin.Engine            // send to correct handler for processing
+	config          util.Config            // store config used to start the server
+	taskDistributor worker.TaskDistributor // To create tasks in redis queue
 }
 
 // NewServer creates a new HTTP server and setup routing for service
-func NewServer(config util.Config, store db.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
 	// token maker for auth handling from config
 	var tokenMaker token.Maker
 	var err error
@@ -38,9 +40,10 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 	// server instance with store, tokenMaker & config
 	server := &Server{
-		store:      store,
-		tokenMaker: tokenMaker,
-		config:     config,
+		store:           store,
+		tokenMaker:      tokenMaker,
+		config:          config,
+		taskDistributor: taskDistributor,
 	}
 	// 	Gin Validator binding - register "currency" as a validator tag
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
