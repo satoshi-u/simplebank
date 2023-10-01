@@ -188,9 +188,9 @@ func runGatewayServer(config util.Config, store db.Store) {
 		log.Fatal().Err(err).Msg("cannot create listener")
 	}
 
-	// get http logger middleware for grpc-gateway within the mux context
+	// get http handler with logger middleware within the mux context
 	handlerWithLoggerMw := gapi.HttpLogger(mux)
-	// start server with listener and handlerWithLoggerMw within mux
+	// start server with listener and handlerWithLoggerMw
 	log.Info().Msgf("starting HTTP gateway server at %s...", listener.Addr().String())
 	err = http.Serve(listener, handlerWithLoggerMw)
 	if err != nil {

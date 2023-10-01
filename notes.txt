@@ -915,7 +915,9 @@ RETURNING *;
 
         Note:   -> In HttpLogger's http.HandlerFunc, call ServeHTTP func with custom ResponseRecorder(has embedded ResponseWriter) instead of http.ResponseWriter directly
                    It helps to capture status code from handler response and log it
-                   ResponseRecorder also attaches error in logs, if response doesn't have http.StatusOK  
+                   ResponseRecorder also attaches error in logs, if response doesn't have http.StatusOK
+
+        TODO:   -> Write gin http-logger using zerolog
 
 ===============================================================================================================================================
 #54 ->

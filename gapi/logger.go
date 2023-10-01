@@ -42,7 +42,7 @@ func GrpcLogger(
 		Dur("duration", duration).
 		Int("status_code", int(statusCode)).
 		Str("status_text ", statusCode.String()).
-		Msg("received a gRPC request")
+		Msg("gRPC request -> gRPC server")
 
 	return result, err
 }
@@ -66,9 +66,9 @@ func (rec *ResponseRecorder) Write(body []byte) (int, error) {
 	return rec.ResponseWriter.Write(body)
 }
 
-// HttpLogger middleware -
+// HttpLogger middleware
 func HttpLogger(handler http.Handler) http.Handler {
-	// doing a type conversion from a  nonymous func to http.HandlerFunc - which implemets the ServeHTTP func required by http.Handler interface
+	// doing a type conversion from an anonymous func to http.HandlerFunc - which implemets the ServeHTTP func required by http.Handler interface
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		startTime := time.Now()
 		// use ResponseRecorder instance when serving the request
@@ -100,6 +100,6 @@ func HttpLogger(handler http.Handler) http.Handler {
 			Dur("duration", duration).
 			Int("status_code", int(rec.StatusCode)).              // status code captured via ResponseRecorder
 			Str("status_text ", http.StatusText(rec.StatusCode)). // status text via status code
-			Msg("received an HTTP request")
+			Msg("http request -> gRPC http-gateway server")
 	})
 }
