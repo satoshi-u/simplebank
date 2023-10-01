@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -53,8 +54,16 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 }
 
 func (server *Server) setupRouter() {
-	// Default Gin router
-	router := gin.Default()
+	//  Default Gin router
+	// router := gin.Default()
+
+	// Initialize custom Gin for enabling structured logger
+	gin.SetMode(gin.ReleaseMode)
+	gin.DefaultErrorWriter = os.Stderr
+	router := gin.New()            // empty engine
+	router.Use(loggerMiddleware()) // adds our new middleware
+	router.Use(gin.Recovery())     // adds the default recovery middleware
+
 	// authRoutes filter requests through our authMiddleware returned authHandler first
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 
@@ -82,4 +91,9 @@ func (server *Server) Start(address string) error {
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func abortWithErrorResponse(ctx *gin.Context, httpErrCode int, err error) {
+	ctx.AbortWithError(httpErrCode, err)
+	ctx.JSON(httpErrCode, errorResponse(err))
 }

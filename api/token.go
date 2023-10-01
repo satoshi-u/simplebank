@@ -19,7 +19,7 @@ type renewAccessTokenResponse struct {
 func (server *Server) renewAccessToken(ctx *gin.Context) {
 	var req renewAccessTokenRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -27,7 +27,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 	refreshPayload, err := server.tokenMaker.VerifyToken(req.RefreshToken)
 	if err != nil {
 		// token is invalid or expired
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, err)
 		return
 	}
 
@@ -35,35 +35,35 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 	session, err := server.store.GetSession(ctx, refreshPayload.ID)
 	if err != nil {
 		// session not found from sessionId (which is refreshToken's uuid)
-		ctx.JSON(http.StatusNotFound, errorResponse(ErrSessionNotFound))
+		abortWithErrorResponse(ctx, http.StatusNotFound, ErrSessionNotFound)
 		return
 	}
 
 	// if session found, check if this session is not blocked
 	if session.IsBlocked {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrBlockedSession))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrBlockedSession)
 		return
 	}
 	// also check if RefreshToken's Username is same as corresponding session's Username (from db)
 	if session.Username != refreshPayload.Username {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrIncorrectSessionUser))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrIncorrectSessionUser)
 		return
 	}
 	// also check if RefreshToken is same as corresponding session's RefreshToken (from db)
 	if session.RefreshToken != req.RefreshToken {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrIncorrectSessionToken))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrIncorrectSessionToken)
 		return
 	}
 	// note* token expiration is already checked for in VerifyToken (*Payload.Valid()), still check for rare case
 	if time.Now().After(refreshPayload.ExpiresAt) {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrExpiredSession))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrExpiredSession)
 		return
 	}
 
 	// issue a new accessToken
 	newAccessToken, accessPayload, err := server.tokenMaker.CreateToken(refreshPayload.Username, server.config.AccessTokenDuration)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 

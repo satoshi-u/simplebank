@@ -41,13 +41,13 @@ func newUserResponse(user db.User) userResponse {
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
 	arg := db.CreateUserParams{
 		Username:       req.Username,
@@ -60,10 +60,10 @@ func (server *Server) createUser(ctx *gin.Context) {
 	if err != nil {
 		// username and email must be unique (UNIQUE)
 		if db.ErrorCode(err) == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusForbidden, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -77,10 +77,10 @@ func (server *Server) getUserDetails(ctx *gin.Context) {
 	user, err := server.store.GetUser(ctx, authPayload.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusNotFound, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -105,7 +105,7 @@ type loginUserResponse struct {
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -113,27 +113,27 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	user, err := server.store.GetUser(ctx, req.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusNotFound, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
 	// check password and create tokens if all ok, or error out
 	err = util.CheckPassword(req.Password, user.HashedPassword)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, err)
 		return
 	}
 	accessToken, accessPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		ExpiresAt:    refreshPayload.ExpiresAt,
 	})
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -175,14 +175,14 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	// get updateUserRequest
 	var req updateUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
 	// check if authorized user from access_token
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if req.Username != authPayload.Username {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrUpdatingUserInfoFromUnauthorizedUser))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrUpdatingUserInfoFromUnauthorizedUser)
 		return
 	}
 
@@ -209,7 +209,7 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		// hash password
 		hashedPassword, err := util.HashPassword(*req.Password)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		}
 		// set hash_password
 		arg.HashedPassword = sql.NullString{
@@ -226,10 +226,10 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	user, err := server.store.UpdateUser(ctx, arg)
 	if err != nil {
 		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusNotFound, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 

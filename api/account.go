@@ -18,7 +18,7 @@ type createAccountRequest struct {
 func (server *Server) createAccount(ctx *gin.Context) {
 	var req createAccountRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -33,10 +33,10 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		errCode := db.ErrorCode(err)
 		// owner must ref to a user (FK), and {owner-currency}pair shouldn't already exist (UNIQUE)
 		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusForbidden, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -50,7 +50,7 @@ type getAccountRequest struct {
 func (server *Server) getAccount(ctx *gin.Context) {
 	var req getAccountRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -58,10 +58,10 @@ func (server *Server) getAccount(ctx *gin.Context) {
 	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
 		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			abortWithErrorResponse(ctx, http.StatusNotFound, err)
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 	// note* unit test fails if we account is not the same as expected
@@ -69,7 +69,7 @@ func (server *Server) getAccount(ctx *gin.Context) {
 
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if account.Owner != authPayload.Username {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(ErrFetchingUnauthorizedAccount))
+		abortWithErrorResponse(ctx, http.StatusUnauthorized, ErrFetchingUnauthorizedAccount)
 		return
 	}
 
@@ -84,7 +84,7 @@ type listAccountsRequest struct {
 func (server *Server) listAccounts(ctx *gin.Context) {
 	var req listAccountsRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
 
@@ -96,7 +96,7 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 	}
 	accounts, err := server.store.ListAccounts(ctx, arg)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 		return
 	}
 
