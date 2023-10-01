@@ -922,14 +922,37 @@ RETURNING *;
 ===============================================================================================================================================
 #54 -> Implement background worker in Go with Redis and asynq
 
-      Use case: send verification email (gRPC : for package gapi)
-
-        1. Create a new user record in databse  
-        2. Push a send verification email task to the Redis queue 
-        3. Background worker picks up a task from the queue and process it 
-
+        Worker Pattern  : send & process async tasks using Redis as its message queue
+        Use case        : send verification email (gRPC : for package gapi)
+        
         We will be using asynq- distributed task queue lib: https://github.com/hibiken/asynq
         A worker goroutine is started for each task in queue,
-        So tasks are processed concurrently by multiple workers. 
+        So tasks are processed concurrently by multiple workers.
+                1. Create a new user record in databse  
+                2. Push a send verification email task to the Redis queue 
+                3. Background worker picks up a task from the queue and process it 
+        
+        Added worker package with task distributor & processor interfaces w Redis Impl
+        
+===============================================================================================================================================
+#55 -> Integrate async worker to Go web server
 
-          
+        Run Redis server via docker, add in Makefile:
+	        $ docker run --name redis -p 6379:6379 -d redis:7-alpine
+        To check if redis is running properly:
+                $ docker exec -it redis redis-cli ping
+
+       Added code to:-
+                add Redis TaskDistributor field in gapi/server struct
+                create Redis TaskDistributor in main.go, and save it while creating gRPC server instance
+                use TaskDistributor to distribute task@TaskSendVerifyEmail in gapi/rpc_create_user.go
+                start Redis TaskProcessor as a goroutine in main.go
+                add optional asynq.Option(queue_name, process_time, max_retries) while distributing task in  gapi/rpc_create_user.go
+                must specify asynq.Config(queue_name) for processor to pick up task from respective queue, if not default queue
+
+        Note:   -> use a DB Tx in rpc_create_user (user shouldn't be created if taskDistributor fails - rollback)
+
+        TODO:   -> Write equivalent code in Gin create_user api - to send email using redis queue
+
+===============================================================================================================================================
+#56 -> 

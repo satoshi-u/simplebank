@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/web3dev6/simplebank/gapi"
 	"github.com/web3dev6/simplebank/pb"
 	"github.com/web3dev6/simplebank/util"
+	"github.com/web3dev6/simplebank/worker"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -76,17 +78,26 @@ func main() {
 	// init accounts in db
 	initDbWithMinUsersAccounts(store, initDbNumUserAccount)
 
+	// Redis config
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+	// Redis task distributor
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+	// Redis task processor - start in a goroutine as its a blocking call - like an http listener
+	go runNewTaskProcessor(redisOpt, store)
+
 	if config.ServerType == "HTTP" {
 		// run http server on 8080
 		runGinServer(config, store)
 	} else if config.ServerType == "GRPC" {
 		// run grpc server on 9090
-		runGrpcServer(config, store)
+		runGrpcServer(config, store, taskDistributor)
 	} else if config.ServerType == "GRPC_GATEWAY" {
 		// run grpc's http gateway server on 8080 as a goroutine without blocking main
-		go runGatewayServer(config, store)
+		go runGatewayServer(config, store, taskDistributor)
 		// run grpc server on 9090
-		runGrpcServer(config, store)
+		runGrpcServer(config, store, taskDistributor)
 	}
 }
 
@@ -103,9 +114,9 @@ func runGinServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
+func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
 	// create a simple_bank server struct which embeds pb.UnimplementedSimpleBankServer
-	server, err := gapi.NewServer(config, store)
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server")
 	}
@@ -138,9 +149,9 @@ func runGrpcServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGatewayServer(config util.Config, store db.Store) {
+func runGatewayServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
 	// create a simple_bank server struct which embeds pb.UnimplementedSimpleBankServer
-	server, err := gapi.NewServer(config, store)
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot register handler  server")
 	}
@@ -253,4 +264,13 @@ func runDBMigration(migrationURL string, dbSource string) {
 	// migration.Steps(numMigration)
 
 	log.Info().Msgf("db migrate success for : %s", dbSource)
+}
+
+func runNewTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+	log.Info().Msg("start taskProcessor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start taskProcessor")
+	}
 }

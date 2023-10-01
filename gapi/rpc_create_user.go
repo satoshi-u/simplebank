@@ -2,10 +2,13 @@ package gapi
 
 import (
 	"context"
+	"time"
 
+	"github.com/hibiken/asynq"
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	"github.com/web3dev6/simplebank/pb"
 	"github.com/web3dev6/simplebank/util"
+	"github.com/web3dev6/simplebank/worker"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -43,6 +46,20 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	}
 
 	// send verification email to user
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Username: user.Username,
+	}
+	// todo: use db transaction as user shouldn't be created if taskDistributor fails - rollback
+	// asynq options to configure task processing while putting it in queue
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),                // retry fails 10 times
+		asynq.ProcessIn(3 * time.Second),  // process in 3 secs
+		asynq.Queue(worker.QueueCritical), // push in queue "critical"
+	}
+	err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to distribute task TaskSendVerifyEmail: %s", err)
+	}
 
 	// return resp
 	resp := &pb.CreateUserResponse{

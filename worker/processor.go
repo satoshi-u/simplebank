@@ -19,6 +19,12 @@ import (
         code for this task-registration written in Start()
 */
 
+const (
+	QueueCritical = "critical"
+	QueueDefault  = "default"
+	QueueLow      = "low"
+)
+
 // Makes code more generic & easier to mock and test
 type TaskProcessor interface {
 	Start() error
@@ -34,7 +40,15 @@ type RedisTaskProcessor struct {
 // interface as return type - forcing RedisTaskProcessor to implement TaskProcessor
 func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskProcessor {
 	// asynq.Config{} allows us to control many different parameters of the asynq server
-	server := asynq.NewServer(redisOpt, asynq.Config{})
+	// Note* Queue name must be given in Queues Config
+	//		if not, the server will process only the "default" queue
+	server := asynq.NewServer(redisOpt, asynq.Config{
+		Queues: map[string]int{
+			QueueCritical: 10,
+			QueueDefault:  5,
+			QueueLow:      1,
+		},
+	})
 	return &RedisTaskProcessor{
 		server: server,
 		store:  store,
