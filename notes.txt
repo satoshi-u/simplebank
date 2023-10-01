@@ -936,7 +936,10 @@ RETURNING *;
         
 ===============================================================================================================================================
 #55 -> Integrate async worker to Go web server
-
+        Run/Stop Redis in mac:
+                $ brew services start redis
+                $ brew services stop redis
+                $ brew services restart redis
         Run Redis server via docker, add in Makefile:
 	        $ docker run --name redis -p 6379:6379 -d redis:7-alpine
         To check if redis is running properly:

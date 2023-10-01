@@ -29,10 +29,10 @@ sqlc:
 	sqlc generate
 
 test:
-	go test -short -cover ./...
-
+	go clean -testcache && go test -short -cover ./...
+	
 test-verbose:
-	go test -v -cover ./...
+	go clean -testcache && go test -v -cover ./...
 
 server:
 	go run main.go
