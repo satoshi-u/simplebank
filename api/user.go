@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -46,19 +47,41 @@ func (server *Server) createUser(ctx *gin.Context) {
 		abortWithErrorResponse(ctx, http.StatusBadRequest, err)
 		return
 	}
-
 	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
 		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
 	}
-	arg := db.CreateUserParams{
-		Username:       req.Username,
-		HashedPassword: hashedPassword,
-		FullName:       req.FullName,
-		Email:          req.Email,
+
+	// using SQL DB Tx with CreateUserTx - as user shouldn't be created if taskDistributor fails - rollback
+	// make create_user_tx params, instead of create_user params directly
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.Username,
+			HashedPassword: hashedPassword,
+			FullName:       req.FullName,
+			Email:          req.Email,
+		},
+		AfterCreate: func(user db.User) error {
+			// send verification email to user - put task in redis queue via distributor
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Username: user.Username,
+			}
+			// asynq options to configure task processing while putting it in queue
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),                // retry fails 10 times
+				asynq.ProcessIn(3 * time.Second),  // process in 3 secs
+				asynq.Queue(worker.QueueCritical), // push in queue "critical"
+			}
+			err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
+			if err != nil {
+				return fmt.Errorf("failed to distribute task TaskSendVerifyEmail: %w", err)
+			}
+			return nil
+		},
 	}
 
-	user, err := server.store.CreateUser(ctx, arg)
+	// now call CreateUserTx, instead of CreateUser directly
+	txResult, err := server.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		// username and email must be unique (UNIQUE)
 		if db.ErrorCode(err) == db.UniqueViolation {
@@ -69,24 +92,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	// send verification email to user
-	taskPayload := &worker.PayloadSendVerifyEmail{
-		Username: user.Username,
-	}
-	// todo: use db transaction as user shouldn't be created if taskDistributor fails - rollback
-	// asynq options to configure task processing while putting it in queue
-	opts := []asynq.Option{
-		asynq.MaxRetry(10),                // retry fails 10 times
-		asynq.ProcessIn(3 * time.Second),  // process in 3 secs
-		asynq.Queue(worker.QueueCritical), // push in queue "critical"
-	}
-	err = server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
-	if err != nil {
-		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
-		return
-	}
-
-	resp := newUserResponse(user)
+	resp := newUserResponse(txResult.User)
 	ctx.JSON(http.StatusOK, resp)
 }
 

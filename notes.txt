@@ -969,7 +969,10 @@ RETURNING *;
         Included CreateUserTx in Store inteface
         Ran make mock to generate mock code for newly added CreateUserTx
 
-        Finally, call CreateUserTx in gapi/rpc_create_user with 
+        Finally, call CreateUserTx in gapi/rpc_create_user with   
                 same CreateUserParams as before
                 and with your custom AfterCreate callback fn where redis enqueue logic goes
-  
+
+        TODO:   -> Modify equivalent code in Gin create_user api to rollback user-creation in db, if redis-enqueue fails
+===============================================================================================================================================
+#57 ->

@@ -27,6 +27,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
 
+	// using SQL DB Tx with CreateUserTx - as user shouldn't be created if taskDistributor fails - rollback
 	// make create_user_tx params, instead of create_user params directly
 	arg := db.CreateUserTxParams{
 		CreateUserParams: db.CreateUserParams{
@@ -35,7 +36,6 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 			FullName:       req.GetFullName(),
 			Email:          req.GetEmail(),
 		},
-		// use SQL DB Tx as user shouldn't be created if taskDistributor fails - rollback
 		AfterCreate: func(user db.User) error {
 			// send verification email to user - put task in redis queue via distributor
 			taskPayload := &worker.PayloadSendVerifyEmail{
@@ -55,7 +55,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		},
 	}
 
-	// call CreateUserTx, instead of CreateUser directly
+	// now call CreateUserTx, instead of CreateUser directly
 	txResult, err := server.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		// username and email must be unique (UNIQUE)

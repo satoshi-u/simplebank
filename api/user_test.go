@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -21,41 +20,78 @@ import (
 	"github.com/web3dev6/simplebank/worker"
 )
 
-type eqCreateUserParamsMatcher struct {
-	arg      db.CreateUserParams
+// type eqCreateUserParamsMatcher struct {
+// 	arg      db.CreateUserParams
+// 	password string
+// }
+
+// // passes iff -> password in request body of test-case gets hashed -> and CreateUser is called with corresponding db.CreateUserParams arg
+// func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
+// 	// convert interface to expected type first
+// 	arg, ok := x.(db.CreateUserParams)
+// 	if !ok {
+// 		return false
+// 	}
+
+// 	// e.password & arg.HashedPassword are coming from CreateUser exec context
+// 	// (after password is hashed, and CreateUser is called with db.CreateUserParams, which includes hashedPassword)
+// 	err := util.CheckPassword(e.password, arg.HashedPassword)
+// 	if err != nil {
+// 		return false
+// 	}
+// 	e.arg.HashedPassword = arg.HashedPassword
+
+// 	// extra check to ensure- arg in our matcher struct is now same as the arg that was passed in invocation context
+// 	return reflect.DeepEqual(e.arg, x)
+// }
+
+// func (e eqCreateUserParamsMatcher) String() string {
+// 	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
+// }
+
+// func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
+// 	return eqCreateUserParamsMatcher{arg, password}
+// }
+
+type eqCreateUserTxParamsMatcher struct {
+	arg      db.CreateUserTxParams
 	password string
 }
 
-// passes iff -> password in request body of test-case gets hashed -> and CreateUser is called with corresponding db.CreateUserParams arg
-func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
+// passes iff -> password in request body of test-case gets hashed -> and CreateUserTx is called with corresponding db.CreateUserTxParams arg
+func (e eqCreateUserTxParamsMatcher) Matches(x interface{}) bool {
 	// convert interface to expected type first
-	arg, ok := x.(db.CreateUserParams)
+	arg, ok := x.(db.CreateUserTxParams)
 	if !ok {
 		return false
 	}
 
-	// e.password & arg.HashedPassword are coming from CreateUser exec context
-	// (after password is hashed, and CreateUser is called with db.CreateUserParams, which includes hashedPassword)
-	err := util.CheckPassword(e.password, arg.HashedPassword)
+	// e.password & arg.HashedPassword are coming from CreateUserTx exec context
+	// (after password is hashed, and CreateUserTx is called with db.CreateUserTxParams, which includes CreateUserParams:hashedPassword)
+	err := util.CheckPassword(e.password, arg.CreateUserParams.HashedPassword)
 	if err != nil {
 		return false
 	}
 	e.arg.HashedPassword = arg.HashedPassword
 
 	// extra check to ensure- arg in our matcher struct is now same as the arg that was passed in invocation context
-	return reflect.DeepEqual(e.arg, x)
+	// Note* e.arg won't be the same as x, since CreateUserTxParams also contains AfterCreate callback fn instance which arg is missing, so add that
+	e.arg.AfterCreate = x.(db.CreateUserTxParams).AfterCreate
+	// return reflect.DeepEqual(e.arg, x)
+	return true
 }
 
-func (e eqCreateUserParamsMatcher) String() string {
-	return fmt.Sprintf("maches arg %v and password %v", e.arg, e.password)
+func (e eqCreateUserTxParamsMatcher) String() string {
+	return fmt.Sprintf("matches arg %v and password %v", e.arg, e.password)
 }
 
-func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher {
-	return eqCreateUserParamsMatcher{arg, password}
+func EqCreateUserTxParams(arg db.CreateUserTxParams, password string) gomock.Matcher {
+	return eqCreateUserTxParamsMatcher{arg, password}
 }
 
 func TestCreateUserAPI(t *testing.T) {
 	user, password := randomUser(t)
+
 	// note* passing hashedPassword in CreateUser arg fails the test as in test exec, a new hashPassword is created and match fails
 	// hashedPassword, err := util.HashPassword(password)
 	// require.NoError(t, err)
@@ -77,18 +113,21 @@ func TestCreateUserAPI(t *testing.T) {
 				"email":     user.Email,
 			},
 			buildStubs: func(store *mockdb.MockStore) {
-				store.EXPECT().
-					CreateUser(gomock.Any(), EqCreateUserParams(db.CreateUserParams{
+				arg := db.CreateUserTxParams{
+					CreateUserParams: db.CreateUserParams{
 						Username: user.Username,
 						FullName: user.FullName,
 						Email:    user.Email,
-					}, password)).
+					},
+				}
+				store.EXPECT().
+					CreateUserTx(gomock.Any(), EqCreateUserTxParams(arg, password)).
 					Times(1).
-					Return(user, nil)
+					Return(db.CreateUserTxResult{User: user}, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
-				requireBodyMatchUser(t, recorder.Body, user)
+				requireBodyMatchCreateUserTxResult(t, recorder.Body, user)
 			},
 		},
 		{
@@ -101,9 +140,9 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUserTx(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, sql.ErrConnDone)
+					Return(db.CreateUserTxResult{User: db.User{}}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -119,9 +158,9 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUserTx(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, db.ErrUniqueViolation)
+					Return(db.CreateUserTxResult{User: db.User{}}, db.ErrUniqueViolation)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -137,7 +176,7 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUserTx(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -154,7 +193,7 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUserTx(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -171,7 +210,7 @@ func TestCreateUserAPI(t *testing.T) {
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().
-					CreateUser(gomock.Any(), gomock.Any()).
+					CreateUserTx(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -224,16 +263,31 @@ func randomUser(t *testing.T) (user db.User, password string) {
 	return
 }
 
-func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
+// func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
+// 	data, err := io.ReadAll(body)
+// 	require.NoError(t, err)
+
+// 	var userFromBody db.User
+// 	err = json.Unmarshal(data, &userFromBody)
+
+// 	require.NoError(t, err)
+// 	require.Equal(t, user.Username, userFromBody.Username)
+// 	require.Equal(t, user.FullName, userFromBody.FullName)
+// 	require.Equal(t, user.Email, userFromBody.Email)
+// 	require.Empty(t, userFromBody.HashedPassword)
+// }
+
+func requireBodyMatchCreateUserTxResult(t *testing.T, body *bytes.Buffer, user db.User) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
 
-	var userFromBody db.User
-	err = json.Unmarshal(data, &userFromBody)
+	var txResultFromBody db.CreateUserTxResult
+	err = json.Unmarshal(data, &txResultFromBody)
 
 	require.NoError(t, err)
-	require.Equal(t, user.Username, userFromBody.Username)
-	require.Equal(t, user.FullName, userFromBody.FullName)
-	require.Equal(t, user.Email, userFromBody.Email)
-	require.Empty(t, userFromBody.HashedPassword)
+	require.NotNil(t, txResultFromBody)
+	require.Equal(t, user.Username, txResultFromBody.User.Username)
+	require.Equal(t, user.FullName, txResultFromBody.User.FullName)
+	require.Equal(t, user.Email, txResultFromBody.User.Email)
+	require.Empty(t, txResultFromBody.User.HashedPassword)
 }

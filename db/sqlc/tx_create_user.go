@@ -9,8 +9,9 @@ type CreateUserTxParams struct {
 }
 
 // CreateUserTxResult contains the result of the CreateUser transaction
+// Note* User must be anonymously embedded to make json marshall/unmarshal work in user_test
 type CreateUserTxResult struct {
-	User User
+	User
 }
 
 // CreateUserTx creates a new user and sends a welcome email to user's email
