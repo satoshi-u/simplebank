@@ -958,4 +958,18 @@ RETURNING *;
         TODO:   -> Write equivalent code in Gin create_user api - to send email using redis queue
 
 ===============================================================================================================================================
-#56 -> 
+#56 -> Send async tasks to Redis within a DB transaction
+
+        Here, we club store:create_user & taskDistributor:DistributeTaskSendVerifyEmail into a single db tx
+        So that no user is created, if Redis taskDistributor fail
+        We can do so with SQL DB Tx
+
+        Created tx_create_user/CreateUserTx, in similar lines to tx_transfer_money/TransferTx
+        CreateUserTx - creates the user in db & calls a callback fn to enqueue in redis, all in one DB Tx
+        Included CreateUserTx in Store inteface
+        Ran make mock to generate mock code for newly added CreateUserTx
+
+        Finally, call CreateUserTx in gapi/rpc_create_user with 
+                same CreateUserParams as before
+                and with your custom AfterCreate callback fn where redis enqueue logic goes
+  
