@@ -974,5 +974,33 @@ RETURNING *;
                 and with your custom AfterCreate callback fn where redis enqueue logic goes
 
         TODO:   -> Modify equivalent code in Gin create_user api to rollback user-creation in db, if redis-enqueue fails
+
 ===============================================================================================================================================
-#57 ->
+#57 -> Handle errors, custom logging for Go Asynq workers with asynq.Config
+
+        In worker/processor.go, whilke creating a new asynq server for redis-processor, modified asynq.Config to :-
+                ErrorHandler:   log for failed tasks due to errors like - fetching user from db failed, sending email failed, etc
+                RetryDelayFunc: to specify the intervals at which retries to be done
+                Logger:         to implement asynq's Logger interface with our zerolog impl
+        Also, redis.SetLogger(logger) to implement redis's Logging interface with our zerolog impl
+
+===============================================================================================================================================
+#58 -> Must have delay in redis async tasks
+
+        - async task(send_email) depends on user being there in DB
+        - must give time to the DB Tx of create_user to be committed, so that there is a user in DB
+        - so as we have already implemented,
+          our workers pick up async task(send_email) from queue with a delay of 3 secs due to asynq.Option @asynq.ProcessIn(3 * time.Second) while enqueuing task in gapi/rpc_create_user
+
+        Note:   -> To simulate this fail scenario, 
+                   add sleep in db/sqlc/store execTx() func before the return statement - so that call to CreateUserTx will give delay
+                   and in gapi/rpc_create_user, remove asynq.Option @ProcessIn(3 * time.Second) - so that task is immediately processed when queued
+  
+                7:29PM ERR process task failed error="user with username test1 doesn't exist: skip retry for the task" payload={"username":"test1"} type=task:send_verify_email
+                7:29PM WRN Retry exhausted for task id=376a7ccf-d8af-457e-99c5-e2c503ea05bb
+
+                Not only you get an error that user doesn't exist,
+                But worse, server skips retry and user will never receive the welcome email
+                Better to keep retrying by uncommenting asynq.SkipRetry
+===============================================================================================================================================
+#59  ->

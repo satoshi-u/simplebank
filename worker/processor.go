@@ -2,9 +2,7 @@ package worker
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -91,10 +89,11 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	// process the task - Get user from db and send welcome email
 	user, err := processor.store.GetUser(ctx, payload.Username)
 	if err != nil {
-		if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
-			// user doesn't exist, no need to retry
-			return fmt.Errorf("user with username %s doesn't exist: %w", payload.Username, asynq.SkipRetry)
-		}
+		// considering user_creation in db takes time, keep retrying, no need of asynq.SkipRetry
+		// if errors.Is(err, db.ErrRecordNotFound) || errors.Is(err, sql.ErrNoRows) {
+		// 	// user doesn't exist, no need to retry
+		// 	return fmt.Errorf("user with username %s doesn't exist: %w", payload.Username, asynq.SkipRetry)
+		// }
 		return fmt.Errorf("failed to get user with username %s: %w", payload.Username, err)
 	}
 	// todo send email here
