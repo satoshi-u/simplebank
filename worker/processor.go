@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	db "github.com/web3dev6/simplebank/db/sqlc"
 )
@@ -20,9 +22,10 @@ import (
 */
 
 const (
-	QueueCritical = "critical"
-	QueueDefault  = "default"
-	QueueLow      = "low"
+	QueueCritical              = "critical"
+	QueueDefault               = "default"
+	QueueLow                   = "low"
+	TaskRetryDurationInSeconds = 3
 )
 
 // Makes code more generic & easier to mock and test
@@ -39,16 +42,36 @@ type RedisTaskProcessor struct {
 
 // interface as return type - forcing RedisTaskProcessor to implement TaskProcessor
 func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskProcessor {
+	// our custom Logger instance
+	logger := NewLogger()
+	// call SetLogger to set our custom Logger struct as implementation for Redis Logging interface
+	redis.SetLogger(logger)
 	// asynq.Config{} allows us to control many different parameters of the asynq server
 	// Note* Queue name must be given in Queues Config
 	//		if not, the server will process only the "default" queue
-	server := asynq.NewServer(redisOpt, asynq.Config{
-		Queues: map[string]int{
-			QueueCritical: 10,
-			QueueDefault:  5,
-			QueueLow:      1,
-		},
-	})
+	server := asynq.NewServer(redisOpt,
+		asynq.Config{
+			Queues: map[string]int{
+				QueueCritical: 10,
+				QueueDefault:  5,
+				QueueLow:      1,
+			},
+			// ErrorHandler handles when task fails and returns error
+			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
+				// log failed task details
+				log.Error().Err(err).
+					Str("type", task.Type()).
+					RawJSON("payload", task.Payload()).
+					// Bytes("payload", task.Payload()).
+					Msg("process task failed")
+			}),
+			// RetryDelayFunc defines the retry interval - constant of 3secs for now
+			RetryDelayFunc: asynq.RetryDelayFunc(func(n int, e error, t *asynq.Task) time.Duration {
+				return time.Duration(TaskRetryDurationInSeconds * time.Second)
+			}),
+			// Logger - logger implements the asynq's Logger interface with zerolog logging at various log levels
+			Logger: logger,
+		})
 	return &RedisTaskProcessor{
 		server: server,
 		store:  store,
