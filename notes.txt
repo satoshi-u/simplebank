@@ -1003,4 +1003,16 @@ RETURNING *;
                 But worse, server skips retry and user will never receive the welcome email
                 Better to keep retrying by uncommenting asynq.SkipRetry
 ===============================================================================================================================================
-#59  ->
+#59  -> Send emails in Go via Gmail
+
+        Using this package:
+        $ go get github.com/jordan-wright/email
+
+        Create a generic interface EmailSender which has a SendEmail func
+        Create an impl struct GmailSender which stores sender name, email-address, email-password
+        Create a create_struct func NewGmailSender which creates GmailSender with required args and returns it as EmailSender
+        Implement the SendEmail function vai this GmailSender struct using golang package jordan-wright/email
+
+===============================================================================================================================================
+#60  ->
+
