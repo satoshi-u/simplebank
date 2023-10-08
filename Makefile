@@ -30,8 +30,8 @@ sqlc:
 
 test:
 	go clean -testcache && go test -short -cover ./...
-	
-test-verbose:
+
+testv:
 	go clean -testcache && go test -v -cover ./...
 
 server:

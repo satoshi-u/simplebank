@@ -8,10 +8,16 @@ import (
 )
 
 func TestSendEmailWithGamil(t *testing.T) {
-	// load config from app.env
+	// skip this test to stop sapmming my gmail @sarthakjoshi.in
+	if testing.Short() {
+		t.Skip()
+	}
+
+	// else load config from app.env
 	config, err := util.LoadConfig("../.")
 	require.NoError(t, err)
 
+	// prep email
 	sender := NewGmailSender(config.EmailSenderName, config.EmailSenderAddress, config.EmailSenderPassword)
 	subject := "Simple Bank Test Email"
 	content := `
@@ -22,6 +28,7 @@ func TestSendEmailWithGamil(t *testing.T) {
 	to := []string{"sarthakjoshi.in@gmail.com"}
 	attachFiles := []string{"../simple-bank.pdf"}
 
+	// send email
 	err = sender.SendEmail(subject, content, to, nil, nil, attachFiles)
 	require.NoError(t, err)
 }

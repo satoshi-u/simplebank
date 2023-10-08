@@ -1014,5 +1014,15 @@ RETURNING *;
         Implement the SendEmail function vai this GmailSender struct using golang package jordan-wright/email
 
 ===============================================================================================================================================
-#60  ->
+#60  -> Skip tests in go
 
+        Check if testing.Short() is set, and do t.Skip() if yes
+        Use -short flag in go test
+
+        Note:   -> For vs code, search for "go test flags" & add the following in srttings.json
+                   $ "go.testFlags": ["-v", "-count=1"]
+                   -v always gives us test logs
+                   -count=1 always runs the test afresh 
+
+===============================================================================================================================================
+#61  -> Email verification in Go: design DB and send email
