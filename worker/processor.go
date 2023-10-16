@@ -10,6 +10,8 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog/log"
 	db "github.com/web3dev6/simplebank/db/sqlc"
+	"github.com/web3dev6/simplebank/mail"
+	util "github.com/web3dev6/simplebank/util"
 )
 
 /*
@@ -36,10 +38,11 @@ type TaskProcessor interface {
 type RedisTaskProcessor struct {
 	server *asynq.Server
 	store  db.Store
+	mailer mail.EmailSender
 }
 
 // interface as return type - forcing RedisTaskProcessor to implement TaskProcessor
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer mail.EmailSender) TaskProcessor {
 	// our custom Logger instance
 	logger := NewLogger()
 	// call SetLogger to set our custom Logger struct as implementation for Redis Logging interface
@@ -73,6 +76,7 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskPr
 	return &RedisTaskProcessor{
 		server: server,
 		store:  store,
+		mailer: mailer,
 	}
 }
 
@@ -86,7 +90,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 		return fmt.Errorf("failed to unmarshal task payload: %w", asynq.SkipRetry)
 	}
 
-	// process the task - Get user from db and send welcome email
+	// process the task - Get user from db and send welcome/verify_email email
 	user, err := processor.store.GetUser(ctx, payload.Username)
 	if err != nil {
 		// considering user_creation in db takes time, keep retrying, no need of asynq.SkipRetry
@@ -96,7 +100,29 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 		// }
 		return fmt.Errorf("failed to get user with username %s: %w", payload.Username, err)
 	}
-	// todo send email here
+
+	// create a verify_email record in db
+	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
+		Username:   user.Username,
+		Email:      user.Email,
+		SecretCode: util.RandomString(32),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create verify_email in db for user %s: %w", payload.Username, err)
+	}
+
+	// send email here
+	subject := "Welcome to Simple Bank"
+	verifyUrl := fmt.Sprintf("http://simple-bank.org/verify_email?id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode) // verifyUrl should point to a frontend page who parses input arg from url & call api in backend for verification
+	content := fmt.Sprintf(`Hello %s,<br/>
+	Thankyou for registering with us!<br/>
+	Please <a href="%s">click here</a> to verify your email address.<br/> 
+	`, user.FullName, verifyUrl)
+	to := []string{user.Email}
+	err = processor.mailer.SendEmail(subject, content, to, nil, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to send verify_email to user %s: %w", payload.Username, err)
+	}
 
 	// log processed task details
 	log.Info().

@@ -2,31 +2,34 @@ package util
 
 import (
 	"fmt"
+	"hash/maphash"
 	"math/rand"
 	"strings"
-	"time"
 )
 
-const alphabet = "abcdefghijklmnopqrstuvwxyz"
+const alphanumeric = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 var currencies = []string{EUR, USD, INR}
 
+var r *rand.Rand
+
 // init runs every time a package is used
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	r = rand.New(rand.NewSource(int64(new(maphash.Hash).Sum64())))
+	// rand.Seed(time.Now().UnixNano())
 }
 
 // RandomInt generates a random number between min and max
 func RandomInt(min, max int64) int64 {
-	return min + rand.Int63n(max-min+1)
+	return min + r.Int63n(max-min+1)
 }
 
 // RandomString generates a random string of length n
 func RandomString(n int) string {
 	var sb strings.Builder
-	k := len(alphabet)
+	k := len(alphanumeric)
 	for i := 0; i < n; i++ {
-		c := alphabet[rand.Intn(k)]
+		c := alphanumeric[r.Intn(k)]
 		sb.WriteByte(c)
 	}
 	return sb.String()
@@ -50,7 +53,7 @@ func RandomAmount() int64 {
 // RandomCurrency generates a random currency code for account
 func RandomCurrency() string {
 	n := len(currencies)
-	return currencies[rand.Intn(n)]
+	return currencies[r.Intn(n)]
 }
 
 // RandomEmail generates a random email

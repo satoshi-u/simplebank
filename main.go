@@ -21,6 +21,7 @@ import (
 	db "github.com/web3dev6/simplebank/db/sqlc"
 	_ "github.com/web3dev6/simplebank/doc/statik"
 	"github.com/web3dev6/simplebank/gapi"
+	"github.com/web3dev6/simplebank/mail"
 	"github.com/web3dev6/simplebank/pb"
 	"github.com/web3dev6/simplebank/util"
 	"github.com/web3dev6/simplebank/worker"
@@ -30,7 +31,7 @@ import (
 )
 
 const (
-	initDbNumUserAccount = 10
+// initDbNumUserAccount = 10
 )
 
 func main() {
@@ -76,7 +77,7 @@ func main() {
 	store := db.NewStore(conn)
 
 	// init accounts in db
-	initDbWithMinUsersAccounts(store, initDbNumUserAccount)
+	// initDbWithMinUsersAccounts(store, initDbNumUserAccount)
 
 	// Redis config
 	redisOpt := asynq.RedisClientOpt{
@@ -85,7 +86,7 @@ func main() {
 	// Redis task distributor
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 	// Redis task processor - start in a goroutine as its a blocking call - like an http listener
-	go runNewTaskProcessor(redisOpt, store)
+	go runNewTaskProcessor(config, redisOpt, store)
 
 	if config.ServerType == "HTTP" {
 		// run http server on 8080
@@ -210,48 +211,48 @@ func runGatewayServer(config util.Config, store db.Store, taskDistributor worker
 	}
 }
 
-func initDbWithMinUsersAccounts(store db.Store, num int64) {
-	count, err := store.GetCountForUsers(context.Background())
-	if err != nil {
-		log.Fatal().Err(err).Msg("error in getting count for users from db.store")
-	}
-	if count < num {
-		toAdd := num - count
-		log.Info().Msgf("store: to add %d users with corresponding funded INR accounts!", toAdd)
-		var users = []db.User{}
-		var accounts = []db.Account{}
-		for i := int64(0); i < toAdd; i++ {
-			// create user
-			hashedCommonPassword, err := util.HashPassword("secret")
-			if err != nil {
-				log.Fatal().Err(err).Msg("error in hashing CommonPassword while creating user")
-			}
-			user, err := store.CreateUser(context.Background(), db.CreateUserParams{
-				Username:       util.RandomString(8),
-				HashedPassword: hashedCommonPassword,
-				FullName:       util.RandomString(4) + util.RandomString(6),
-				Email:          util.RandomEmail(),
-			})
-			if err != nil {
-				log.Fatal().Err(err).Msg("error in creating user")
-			}
-			users = append(users, user)
-			// create account for user with INR as currency
-			arg := db.CreateAccountParams{
-				Owner:    user.Username,
-				Balance:  util.RandomBalance(),
-				Currency: util.INR,
-			}
-			account, err := store.CreateAccount(context.Background(), arg)
-			if err != nil {
-				log.Fatal().Err(err).Msg("error in creating account for user")
-			}
-			accounts = append(accounts, account)
-		}
-		log.Info().Msgf("num (users created) = %d", len(users))
-		log.Info().Msgf("num (accounts created) = %d", len(accounts))
-	}
-}
+// func initDbWithMinUsersAccounts(store db.Store, num int64) {
+// 	count, err := store.GetCountForUsers(context.Background())
+// 	if err != nil {
+// 		log.Fatal().Err(err).Msg("error in getting count for users from db.store")
+// 	}
+// 	if count < num {
+// 		toAdd := num - count
+// 		log.Info().Msgf("store: to add %d users with corresponding funded INR accounts!", toAdd)
+// 		var users = []db.User{}
+// 		var accounts = []db.Account{}
+// 		for i := int64(0); i < toAdd; i++ {
+// 			// create user
+// 			hashedCommonPassword, err := util.HashPassword("secret")
+// 			if err != nil {
+// 				log.Fatal().Err(err).Msg("error in hashing CommonPassword while creating user")
+// 			}
+// 			user, err := store.CreateUser(context.Background(), db.CreateUserParams{
+// 				Username:       util.RandomString(8),
+// 				HashedPassword: hashedCommonPassword,
+// 				FullName:       util.RandomString(4) + util.RandomString(6),
+// 				Email:          util.RandomEmail(),
+// 			})
+// 			if err != nil {
+// 				log.Fatal().Err(err).Msg("error in creating user")
+// 			}
+// 			users = append(users, user)
+// 			// create account for user with INR as currency
+// 			arg := db.CreateAccountParams{
+// 				Owner:    user.Username,
+// 				Balance:  util.RandomBalance(),
+// 				Currency: util.INR,
+// 			}
+// 			account, err := store.CreateAccount(context.Background(), arg)
+// 			if err != nil {
+// 				log.Fatal().Err(err).Msg("error in creating account for user")
+// 			}
+// 			accounts = append(accounts, account)
+// 		}
+// 		log.Info().Msgf("num (users created) = %d", len(users))
+// 		log.Info().Msgf("num (accounts created) = %d", len(accounts))
+// 	}
+// }
 
 func runDBMigration(migrationURL string, dbSource string) {
 	migration, err := migrate.New(migrationURL, dbSource)
@@ -267,11 +268,14 @@ func runDBMigration(migrationURL string, dbSource string) {
 	log.Info().Msgf("db migrate success for : %s", dbSource)
 }
 
-func runNewTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+func runNewTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store db.Store) {
+	// a mailer instance required for Redis TaskProcessor
+	mailer := mail.NewGmailSender(config.EmailSenderName, config.EmailSenderAddress, config.EmailSenderPassword)
+
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
 	log.Info().Msg("start taskProcessor")
 	err := taskProcessor.Start()
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to start taskProcessor")
+		log.Fatal().Err(err).Msg("failed to start ta   skProcessor")
 	}
 }

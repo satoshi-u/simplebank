@@ -1026,3 +1026,36 @@ RETURNING *;
 
 ===============================================================================================================================================
 #61  -> Email verification in Go: design DB and send email
+
+        Update db.dbml via dbdiagram.io or locally to include email_verification, and then run:-
+                $ make dbdocs
+                $ make dbschema
+
+        Now make a generic create_migration cmd in Makefile, by adding :-
+                $ new_migration:
+	                migrate create -ext sql -dir db/migration -seq $(name)
+        And run this as:-
+                $ make new_migration name=add_verify_email_schema
+        
+        Add migration up/down code in new files
+        Note:   -> In migration down, CASCADE ensures records in other tables which reference this table, also get deleted
+
+        Now, let's run and test the migrations:-
+                $ make migrateup
+                $ make migratedown1
+                $ make migrateup1
+  
+        Write verify_email queries in db/query - verify_email.sql
+        Generate the corresponding sqlc code and mock code by running:-
+                $ make sqlc
+                $ make mock 
+        
+        Now, in the send_email task processor, where you send a dummy welcome email,
+        Create a verify_email record in db &
+        Send the actual verify_email to the new user with GmailSender
+         Note:   -> Add (mailer mail.EmailSender) field in worker/RedisTaskProcessor struct & assign it in NewRedisTaskProcessor
+                    Now you can access mailer.SendEmail() in your receiver (processor *RedisTaskProcessor)
+                    Make changes in main.go to instantiate NewGmailSender in runNewTaskProcessor & pass it to NewRedisTaskProcessor
+
+===============================================================================================================================================
+#62  -> 

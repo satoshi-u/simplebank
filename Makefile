@@ -12,6 +12,9 @@ dropdb:
 	docker exec -it simple-bank-db dropdb simple_bank
 	docker exec -it simple-bank-db-test dropdb simple_bank_test
 
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(name)
+ 
 migrateup:
 	migrate -path db/migration -database "$(SIMPLE_BANK_DB_URL)" -verbose up
 	migrate -path db/migration -database "$(SIMPLE_BANK_TEST_DB_URL)" -verbose up
@@ -35,7 +38,7 @@ testv:
 	go clean -testcache && go test -v -cover ./...
 
 server:
-	go run main.go
+	go run main.go  
 
 mock:
 	mockgen -destination db/mock/store.go -package mockdb github.com/web3dev6/simplebank/db/sqlc Store
@@ -62,4 +65,4 @@ evans:
 redis:
 	docker run --name simple-bank-queue -p 6379:6379 -d redis:7-alpine
 
-.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown sqlc test server mock dbdocs dbschema proto evans redis
+.PHONY: postgres createdb dropdb new_migration migrateup migrateup1 migratedown migratedown sqlc test server mock dbdocs dbschema proto evans redis
