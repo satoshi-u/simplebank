@@ -272,7 +272,7 @@ func runNewTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, stor
 	// a mailer instance required for Redis TaskProcessor
 	mailer := mail.NewGmailSender(config.EmailSenderName, config.EmailSenderAddress, config.EmailSenderPassword)
 
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer, config)
 	log.Info().Msg("start taskProcessor")
 	err := taskProcessor.Start()
 	if err != nil {

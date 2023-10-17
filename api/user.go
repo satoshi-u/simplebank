@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -260,5 +261,39 @@ func (server *Server) updateUser(ctx *gin.Context) {
 
 	// return resp
 	resp := newUserResponse(user)
+	ctx.JSON(http.StatusOK, resp)
+}
+
+func (server *Server) verifyUserEmail(ctx *gin.Context) {
+	// get input from query params
+	emailId := ctx.Query("email_id") // shortcut for c.Request.URL.Query().Get("email_id")
+	eId, err := strconv.Atoi(emailId)
+	if err != nil {
+		// log.Err(err).Msg("error in strconv.Atoi")
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+	secretCode := ctx.Query("secret_code")
+	// log.Debug().Msgf("eId %d", int64(eId))
+	// log.Debug().Msgf("secretCode %s", secretCode)
+
+	// call VerifyEmailTx
+	txResult, err := server.store.VerifyEmailTx(ctx, db.VerifyEmailTxParams{
+		EmailId:    int64(eId),
+		SecretCode: secretCode,
+	})
+	if err != nil {
+		// log.Err(err).Msg("error in server.store.VerifyEmailTx")
+		abortWithErrorResponse(ctx, http.StatusInternalServerError, err)
+		return
+	}
+
+	// return resp
+	resp := struct {
+		IsVerified bool `json:"is_verified"`
+	}{
+		IsVerified: txResult.User.IsEmailVerified,
+	}
+	// log.Debug().Msgf("resp %+v", resp)
 	ctx.JSON(http.StatusOK, resp)
 }

@@ -10,5 +10,5 @@ message VerifyEmailRequest {
 }
 
 message VerifyEmailResponse {
-    bool is_Verified = 1;
+    bool is_verified = 1;
 }

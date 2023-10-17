@@ -278,7 +278,7 @@
     "pbVerifyEmailResponse": {
       "type": "object",
       "properties": {
-        "is_Verified": {
+        "is_verified": {
           "type": "boolean"
         }
       }

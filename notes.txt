@@ -1084,5 +1084,7 @@ RETURNING *;
   
         Finally, finish up by calling VerifyEmailTx in gapi/rpc_verify_email.go after req validations.
 
+        TODO:   -> Add equivalent code in Gin - VerifyEmail in api/user
+
 ===============================================================================================================================================
 #63  -> 

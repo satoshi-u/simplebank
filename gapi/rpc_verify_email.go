@@ -29,7 +29,7 @@ func (server *Server) VerifyEmail(ctx context.Context, req *pb.VerifyEmailReques
 
 	// return resp
 	resp := &pb.VerifyEmailResponse{
-		Is_Verified: txResult.User.IsEmailVerified,
+		IsVerified: txResult.User.IsEmailVerified,
 	}
 	return resp, nil
 }

@@ -39,10 +39,11 @@ type RedisTaskProcessor struct {
 	server *asynq.Server
 	store  db.Store
 	mailer mail.EmailSender
+	config util.Config
 }
 
 // interface as return type - forcing RedisTaskProcessor to implement TaskProcessor
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer mail.EmailSender) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer mail.EmailSender, config util.Config) TaskProcessor {
 	// our custom Logger instance
 	logger := NewLogger()
 	// call SetLogger to set our custom Logger struct as implementation for Redis Logging interface
@@ -77,6 +78,7 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer
 		server: server,
 		store:  store,
 		mailer: mailer,
+		config: config,
 	}
 }
 
@@ -113,7 +115,13 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 
 	// send email here
 	subject := "Welcome to Simple Bank"
-	verifyUrl := fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode) // verifyUrl should point to a frontend page who parses input arg from url & call api in backend for verification
+	// verifyUrl should point to a frontend page who parses input arg from url & call api in backend for verification
+	var verifyUrl string
+	if processor.config.ServerType == "HTTP" {
+		verifyUrl = fmt.Sprintf("http://localhost:8080/users/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)
+	} else {
+		verifyUrl = fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)
+	}
 	content := fmt.Sprintf(`Hello %s,<br/>
 	Thankyou for registering with us!<br/>
 	Please <a href="%s">click here</a> to verify your email address.<br/> 
