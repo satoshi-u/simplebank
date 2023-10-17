@@ -105,7 +105,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	verifyEmail, err := processor.store.CreateVerifyEmail(ctx, db.CreateVerifyEmailParams{
 		Username:   user.Username,
 		Email:      user.Email,
-		SecretCode: util.RandomString(32),
+		SecretCode: util.RandomString(32), // 32-128 in gapi validation
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create verify_email in db for user %s: %w", payload.Username, err)
@@ -113,7 +113,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 
 	// send email here
 	subject := "Welcome to Simple Bank"
-	verifyUrl := fmt.Sprintf("http://simple-bank.org/verify_email?id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode) // verifyUrl should point to a frontend page who parses input arg from url & call api in backend for verification
+	verifyUrl := fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode) // verifyUrl should point to a frontend page who parses input arg from url & call api in backend for verification
 	content := fmt.Sprintf(`Hello %s,<br/>
 	Thankyou for registering with us!<br/>
 	Please <a href="%s">click here</a> to verify your email address.<br/> 

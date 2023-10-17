@@ -1053,9 +1053,36 @@ RETURNING *;
         Now, in the send_email task processor, where you send a dummy welcome email,
         Create a verify_email record in db &
         Send the actual verify_email to the new user with GmailSender
-         Note:   -> Add (mailer mail.EmailSender) field in worker/RedisTaskProcessor struct & assign it in NewRedisTaskProcessor
+        Note:   -> Add (mailer mail.EmailSender) field in worker/RedisTaskProcessor struct & assign it in NewRedisTaskProcessor
                     Now you can access mailer.SendEmail() in your receiver (processor *RedisTaskProcessor)
                     Make changes in main.go to instantiate NewGmailSender in runNewTaskProcessor & pass it to NewRedisTaskProcessor
 
 ===============================================================================================================================================
-#62  -> 
+#62  -> Implement email verification API in Go
+
+        First, make verifyUrl in send_email Task Processor -
+        point to the verify_email backend API in our server directly instead of pointing indidrectly via a frontend page
+        
+        Now, add rpc_verify_email.proto in proto & add corresponding rpc in service_simple_bank.proto
+        Run :-
+                $ make proto
+        With this, stubs for the new verify_email api is generated.
+        
+        Now, we need to implement this new method 
+                @VerifyEmail(context.Context, *VerifyEmailRequest) (*VerifyEmailResponse, error)
+        in the SimpleBankServer interface.
+        Implement it as a method of the gapi.Server struct in gapi/rpc_verify_email.go
+
+        Now,
+        since we want to update both the verify_emails & users tables in this api,
+        we must do it in one single SQL DB Tx, 
+        so write tx_verify_email.go in db/sqlc package - where you call UpdateVerifyEmail & UpdateUser,
+        as a pre-requisite, must have corresponding queries in user.sql & verify_email.sql files- Add/Update queries & run:-
+                $ make sqlc
+        Note:   -> Make sure to add VerifyEmailTx() func signature in the db/sqlc/store Store interface - not present in Querier, it's custom
+        Note:   -> also need to run `$ make mock` once to regenerate the mockstore.
+  
+        Finally, finish up by calling VerifyEmailTx in gapi/rpc_verify_email.go after req validations.
+
+===============================================================================================================================================
+#63  -> 
