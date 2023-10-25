@@ -41,7 +41,8 @@ server:
 	go run main.go  
 
 mock:
-	mockgen -destination db/mock/store.go -package mockdb github.com/web3dev6/simplebank/db/sqlc Store
+	mockgen -destination db/sqlc/mock/store.go -package mockdb github.com/web3dev6/simplebank/db/sqlc Store
+	mockgen -destination worker/mock/distributor.go -package mockwk github.com/web3dev6/simplebank/worker TaskDistributor
 
 dbdocs:
 	dbdocs build doc/db.dbml

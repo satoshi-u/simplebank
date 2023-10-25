@@ -8,14 +8,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
-	mockdb "github.com/web3dev6/simplebank/db/mock"
 	db "github.com/web3dev6/simplebank/db/sqlc"
+	mockdb "github.com/web3dev6/simplebank/db/sqlc/mock"
 	"github.com/web3dev6/simplebank/util"
 	"github.com/web3dev6/simplebank/worker"
 )
@@ -76,9 +77,18 @@ func (e eqCreateUserTxParamsMatcher) Matches(x interface{}) bool {
 
 	// extra check to ensure- arg in our matcher struct is now same as the arg that was passed in invocation context
 	// Note* e.arg won't be the same as x, since CreateUserTxParams also contains AfterCreate callback fn instance which arg is missing, so add that
-	e.arg.AfterCreate = x.(db.CreateUserTxParams).AfterCreate
-	// return reflect.DeepEqual(e.arg, x)
-	return true
+	// e.arg.AfterCreate = x.(db.CreateUserTxParams).AfterCreate
+	// Note* Even after adding, it won't work since in reflect.DeepEqual - Func values are deeply equal if both are nil; so make them nil
+	e.arg.AfterCreate = nil
+	_x, ok := x.(db.CreateUserTxParams)
+	if !ok {
+		return false
+	}
+	_x.AfterCreate = nil
+	x = _x
+	// log.Debug().Msgf("e.arg %+v", e.arg)
+	// log.Debug().Msgf("x %+v", x)
+	return reflect.DeepEqual(e.arg, x) // Note: could have made things simple by passing arg instead of x here
 }
 
 func (e eqCreateUserTxParamsMatcher) String() string {
@@ -95,6 +105,8 @@ func TestCreateUserAPI(t *testing.T) {
 	// note* passing hashedPassword in CreateUser arg fails the test as in test exec, a new hashPassword is created and match fails
 	// hashedPassword, err := util.HashPassword(password)
 	// require.NoError(t, err)
+
+	// buildStubs - this is where we tell gomock, which func we expect to be called, with which parameters, and return which output
 
 	// checkResponse can have the same testing context {t *testing.T of TestCreateUserAPI} across all test-cases
 	// note* In account_test, checkResponse signature had separate {t *testing.T}

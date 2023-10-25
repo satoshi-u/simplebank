@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-const alphanumeric = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const alphanumeric_space = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const username_space = "0123456789_abcdefghijklmnopqrstuvwxyz"
+const fullname_space = "abcdefghijklmnopqrstuvwxyz "
 
 var currencies = []string{EUR, USD, INR}
 
@@ -25,11 +27,15 @@ func RandomInt(min, max int64) int64 {
 }
 
 // RandomString generates a random string of length n
-func RandomString(n int) string {
+func RandomString(n int, space_optional ...string) string {
+	space := alphanumeric_space
+	if len(space_optional) > 0 {
+		space = space_optional[0]
+	}
 	var sb strings.Builder
-	k := len(alphanumeric)
+	k := len(space)
 	for i := 0; i < n; i++ {
-		c := alphanumeric[r.Intn(k)]
+		c := space[r.Intn(k)]
 		sb.WriteByte(c)
 	}
 	return sb.String()
@@ -59,4 +65,19 @@ func RandomCurrency() string {
 // RandomEmail generates a random email
 func RandomEmail() string {
 	return fmt.Sprintf("%s@email.com", RandomString(6))
+}
+
+// RandomOwner generates a random valid Username
+func RandomUsername() string {
+	return RandomString(6, username_space)
+}
+
+// RandomFullName generates a random valid FullName
+func RandomFullName() string {
+	return RandomString(6, fullname_space)
+}
+
+// RandomPassword generates a random valid Password
+func RandomPassword() string {
+	return RandomString(6)
 }

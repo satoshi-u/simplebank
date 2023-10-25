@@ -1087,4 +1087,43 @@ RETURNING *;
         TODO:   -> Add equivalent code in Gin - VerifyEmail in api/user
 
 ===============================================================================================================================================
-#63  -> 
+#63  -> Unit test gRPC API with mock DB & Redis
+
+        Write gapi/create_user tests in rpc_create_user_test.go, copy from api/user_test.go
+        In testCases struct, 
+        make body type as *pb.CreateUserRequest
+        make checkResponse type as func(t *testing.T, res *pb.CreateUserResponse, err error)
+
+        Write a gapi/main_test.go file to create a new test server
+        Note:   ->  a new server requires an arg taskDistributor worker.TaskDistributor
+                    which is just an interface, which we can mock just like the store inteface
+                    edit the Makefile for the same
+
+        Loop over the testcases, and for each tc- 
+        Now, create a new test server (gapi) with mock store and mock taskDistributor 
+        call the server.CreateUser 
+        call tc.checkResponse
+        Note:   ->  make sure randomUser func returns a valid user which passes validation checks in gapi/create_user
+        PASS
+
+        To make test more robust:-
+        Ensure in your test-cases for gapi/create_user, you expect a call to server.taskDistributor.DistributeTaskSendVerifyEmail
+        to make sure send_email task is enqueued for each user when created in db
+        Use mock taskDistributor as another param in testcase's buildStubs
+        Expect call to DistributeTaskSendVerifyEmail with expected params fails - AfterCreate func needs to be called for DistributeTaskSendVerifyEmail func to be called, 
+                but our CreateUserTx is a mock call, so no call to DistributeTaskSendVerifyEmail - test fails
+                fix: trigger actual AfterCreate func in the mock CreateUserTx call - in our custom go mock matcher, if things match, execute the AfterCreate call & return true from matcher
+        Note:   -> Instead of gomock.Any() to match variadic opts arg of DistributeTaskSendVerifyEmail, use  gomock.Eq() matcher to match each of the opts
+
+        Still, get an error - panic: test timed out after 30s
+        This is due to how gomock works internally - same controller being used by us for mock store & mock task-distributor
+                There is a locking mechanism in the controller whenever it checks for a matching fn call.  
+                CreateUserTx mock acquires the lock, and AfterCreate can no longer acquire the lock, hence fails
+                fix: have separate instances of this controller in test
+        PASS
+        Note:   -> Strong test: fails if no call to DistributeTaskSendVerifyEmail in AfterCreate
+
+        TODO:   -> Cover all test-cases in gapi/create_user like in api/create_user
+
+===============================================================================================================================================
+#64  ->
