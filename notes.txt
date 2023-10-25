@@ -1126,4 +1126,16 @@ RETURNING *;
         TODO:   -> Cover all test-cases in gapi/create_user like in api/create_user
 
 ===============================================================================================================================================
-#64  ->
+#64  -> How to test a gRPC API that requires authentication
+
+        Error :- rpc error: code = Unauthenticated desc = unauthorized: missing metadata
+
+        Fix :- in the unit test for auth-grpc-routes, 
+                we will have to add a valid access_token to the context's metadata before sending the request 
+
+        Add a buildContext method to the testcase struct - 
+                buildContext  func(t *testing.T, tokenMaker token.Maker) context.Context
+                using this, for different cases, you can build different context/metadata - 
+                valid token, invalid token, expired token, no token
+
+===============================================================================================================================================

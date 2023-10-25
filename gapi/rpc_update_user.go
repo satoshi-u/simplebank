@@ -63,7 +63,7 @@ func (server *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest)
 	// call UpdateUser for db
 	user, err := server.store.UpdateUser(ctx, arg)
 	if err != nil {
-		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() {
+		if db.ErrorCode(err) == db.ErrRecordNotFound.Error() || err.Error() == sql.ErrNoRows.Error() {
 			return nil, status.Errorf(codes.NotFound, "user with username not found: %s", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update user: %s", err)
